@@ -50,6 +50,8 @@
         pleasure: { label: "PRAZER",  color: "#d946ef", danger: "#ffffff" }
     };
 
+    let domCache = {};
+
     // ==========================================
     // 2. CSS ARCHITECTURE
     // ==========================================
@@ -206,17 +208,34 @@
         body.appendChild(buildStatBar('pleasure', statConfig.pleasure));
     };
 
+    const cacheDomElements = () => {
+        domCache = {
+            locText: document.getElementById('knd-loc-text'),
+            tokens: document.getElementById('knd-tokens'),
+            footer: document.getElementById('knd-hud-footer'),
+            stats: {}
+        };
+        Object.keys(gameState.stats).forEach(key => {
+            domCache.stats[key] = {
+                val: document.getElementById(`val-${key}`),
+                blocks: document.getElementById(`blocks-${key}`).children,
+                container: document.getElementById(`stat-${key}`)
+            };
+        });
+    };
+
     const renderState = () => {
-        document.getElementById('knd-loc-text').innerText = `📍 ${gameState.loc}`;
-        document.getElementById('knd-tokens').innerText = gameState.tokens + 'T';
+        domCache.locText.innerText = `📍 ${gameState.loc}`;
+        domCache.tokens.innerText = gameState.tokens + 'T';
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
-            const blocks = document.getElementById(`blocks-${key}`).children;
+            const cache = domCache.stats[key];
+            const blocks = cache.blocks;
 
-            document.getElementById(`val-${key}`).innerText = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') document.getElementById('stat-pleasure').style.display = stat.val > 0 ? 'flex' : 'none';
+            cache.val.innerText = `${Math.round(stat.val)}%`;
+            if (key === 'pleasure') cache.container.style.display = stat.val > 0 ? 'flex' : 'none';
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
@@ -237,7 +256,7 @@
     };
 
     const showLog = (text, color) => {
-        const footer = document.getElementById('knd-hud-footer');
+        const footer = domCache.footer;
         const span = document.createElement('span');
         span.className = 'knd-floating-text'; span.style.color = color; span.innerText = text;
         footer.appendChild(span);
@@ -530,6 +549,7 @@
         injectCSS();
         const hud = createHUD();
         assembleBody();
+        cacheDomElements();
         initDraggable(hud);
         initToolsLogic();
         renderState();
