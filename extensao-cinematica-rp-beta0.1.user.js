@@ -124,7 +124,7 @@
         hud.id = 'knd-hud-wrapper';
         hud.innerHTML = `
             <div id="knd-hud-header">
-                <div class="knd-header-loc" id="knd-loc-text">📍 ${gameState.loc}</div>
+                <div class="knd-header-loc" id="knd-loc-text">📍 </div>
                 <div class="knd-header-api" title="API Status & Tokens">
                     <span class="knd-status-icon" id="icon-k">K</span>
                     <span class="knd-status-icon" id="icon-c">C</span>
@@ -180,14 +180,16 @@
 
             <div id="knd-hud-footer"></div>
         `;
+        hud.querySelector('#knd-loc-text').textContent = `📍 ${gameState.loc}`;
         document.body.appendChild(hud);
         return hud;
     };
 
     const buildStatBar = (key, config) => {
         const wrapper = document.createElement('div'); wrapper.className = 'knd-stat-container'; wrapper.id = `stat-${key}`;
-        wrapper.innerHTML = `<div class="knd-stat-header"><span>${config.label}</span> <span id="val-${key}">0%</span></div>
+        wrapper.innerHTML = `<div class="knd-stat-header"><span id="lbl-${key}"></span> <span id="val-${key}">0%</span></div>
                              <div class="knd-blocks-wrapper" id="blocks-${key}">${'<div class="knd-block"></div>'.repeat(10)}</div>`;
+        wrapper.querySelector(`#lbl-${key}`).textContent = config.label;
         return wrapper;
     };
 
