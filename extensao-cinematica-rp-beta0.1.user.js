@@ -5,7 +5,11 @@
 // @description  Liquid Glass RPG HUD + Journal Tool + API Pinger
 // @author       Dev LLM Game & You
 // @match        *://*.kindroid.ai/*
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_xmlhttpRequest
+// @connect      api.kindroid.ai
+// @connect      generativelanguage.googleapis.com
 // ==/UserScript==
 
 (function() {
@@ -141,21 +145,21 @@
                     <label>KINDROID API KEY (Geral)</label>
                     <div class="knd-input-group">
                         <input type="password" class="knd-input" id="inp-api-k" placeholder="sk-kindroid...">
-                        <button class="knd-btn-ping" onclick="window.pingAPI('k')">PING</button>
+                        <button class="knd-btn-ping" id="btn-ping-k">PING</button>
                     </div>
                 </div>
                 <div class="knd-settings-row">
                     <label>KIN ID (Personagem)</label>
                     <div class="knd-input-group">
                         <input type="password" class="knd-input" id="inp-api-c" placeholder="Kin ID...">
-                        <button class="knd-btn-ping" onclick="window.pingAPI('c')">PING</button>
+                        <button class="knd-btn-ping" id="btn-ping-c">PING</button>
                     </div>
                 </div>
                 <div class="knd-settings-row">
                     <label>GEMINI API KEY</label>
                     <div class="knd-input-group">
                         <input type="password" class="knd-input" id="inp-api-g" placeholder="AIzaSy...">
-                        <button class="knd-btn-ping" onclick="window.pingAPI('g')">PING</button>
+                        <button class="knd-btn-ping" id="btn-ping-g">PING</button>
                     </div>
                 </div>
                 <button class="knd-btn-action" id="knd-save-keys">SALVAR CHAVES</button>
@@ -413,7 +417,7 @@
     // 7. API TOOLS (JOURNAL & PING)
     // ==========================================
     const initToolsLogic = () => {
-        const savedKeys = JSON.parse(localStorage.getItem('knd_rp_keys') || '{"k":"","c":"","g":""}');
+        const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
         document.getElementById('inp-api-k').value = savedKeys.k;
@@ -424,9 +428,22 @@
             gameState.apiKeys.k = document.getElementById('inp-api-k').value;
             gameState.apiKeys.c = document.getElementById('inp-api-c').value;
             gameState.apiKeys.g = document.getElementById('inp-api-g').value;
-            localStorage.setItem('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+            GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
             showLog('[CHAVES SALVAS]', '#4ade80');
         });
+
+        const gmFetch = (url, options) => {
+            return new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: options.method || 'GET',
+                    url: url,
+                    headers: options.headers || {},
+                    data: options.body,
+                    onload: (response) => resolve({ ok: response.status >= 200 && response.status < 300, status: response.status, responseText: response.responseText }),
+                    onerror: (error) => reject(error)
+                });
+            });
+        };
 
         // ACTION: ENVIAR JOURNAL
         document.getElementById('knd-send-journal').addEventListener('click', async () => {
@@ -442,7 +459,7 @@
             showLog('[ENVIANDO PARA MEMÓRIA...]', '#eab308');
 
             try {
-                const res = await fetch("https://api.kindroid.ai/v1/journal-create", {
+                const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${gameState.apiKeys.k}`,
@@ -467,7 +484,7 @@
             }
         });
 
-        window.pingAPI = async (type) => {
+        const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
             const targetVal = document.getElementById(`inp-api-${type}`).value.trim();
             const keyK = document.getElementById('inp-api-k').value.trim();
@@ -477,20 +494,20 @@
             try {
                 let success = false;
                 if (type === 'g') {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${targetVal}`, {
+                    const res = await gmFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${targetVal}`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
                     });
                     success = res.ok;
                 } else if (type === 'k') {
-                    const res = await fetch("https://api.kindroid.ai/v1/check-user-subscription", {
+                    const res = await gmFetch("https://api.kindroid.ai/v1/check-user-subscription", {
                         method: 'POST', headers: { 'Authorization': `Bearer ${targetVal}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({})
                     });
                     success = res.ok;
                 } else if (type === 'c') {
                     if(!keyK) throw new Error();
-                    const res = await fetch("https://api.kindroid.ai/v1/update-info", {
+                    const res = await gmFetch("https://api.kindroid.ai/v1/update-info", {
                         method: 'POST', headers: { 'Authorization': `Bearer ${keyK}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ ai_id: targetVal })
                     });
@@ -500,6 +517,10 @@
                 if(success) gameState.apiKeys[type] = targetVal;
             } catch (err) { icon.className = 'knd-status-icon error'; }
         };
+
+        document.getElementById('btn-ping-k').addEventListener('click', () => pingAPI('k'));
+        document.getElementById('btn-ping-c').addEventListener('click', () => pingAPI('c'));
+        document.getElementById('btn-ping-g').addEventListener('click', () => pingAPI('g'));
     };
 
     // ==========================================
