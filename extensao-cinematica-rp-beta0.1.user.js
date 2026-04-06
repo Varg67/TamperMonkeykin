@@ -38,16 +38,16 @@
     };
 
     const statConfig = {
-        hunger:   { label: "FOME",    color: "#f97316", danger: "#ea580c" },
-        thirst:   { label: "SEDE",    color: "#06b6d4", danger: "#dc2626" },
-        energy:   { label: "ENERGIA", color: "#4ade80", danger: "#eab308" },
-        hygiene:  { label: "HIGIENE", color: "#e2e8f0", danger: "#b45309" },
-        stress:   { label: "STRESS",  color: "#7c3aed", danger: "#ef4444" },
-        connect:  { label: "CONEXÃO", color: "#3b82f6", danger: "#1e3a8a" },
-        affection:{ label: "AFEIÇÃO", color: "#ec4899", danger: "#be185d" },
-        trust:    { label: "CONFIANÇA",color: "#eab308", danger: "#a16207" },
-        libido:   { label: "LIBIDO",  color: "#dc2626", danger: "#ff0000" },
-        pleasure: { label: "PRAZER",  color: "#d946ef", danger: "#ffffff" }
+        hunger:   { label: "🍔 FOME",    color: "#f97316", danger: "#ea580c" },
+        thirst:   { label: "💧 SEDE",    color: "#3b82f6", danger: "#1d4ed8" },
+        energy:   { label: "⚡ ENERGIA", color: "#eab308", danger: "#ca8a04" },
+        hygiene:  { label: "🫧 HIGIENE", color: "#06b6d4", danger: "#0891b2" },
+        stress:   { label: "🟣 STRESS",  color: "#7c3aed", danger: "#ef4444" },
+        connect:  { label: "🔗 CONEXÃO", color: "#60a5fa", danger: "#2563eb" },
+        affection:{ label: "🩷 AFEIÇÃO", color: "#ec4899", danger: "#be185d" },
+        trust:    { label: "🤝 CONFIANÇA",color: "#10b981", danger: "#047857" },
+        libido:   { label: "🔴 LIBIDO",  color: "#ef4444", danger: "#b91c1c" },
+        pleasure: { label: "🪻 PRAZER",  color: "#d946ef", danger: "#c026d3" }
     };
 
     // ==========================================
@@ -59,23 +59,27 @@
             #knd-hud-wrapper {
                 position: fixed; top: 20px; right: 20px; width: 360px;
                 background: rgba(35, 40, 50, 0.85); backdrop-filter: blur(16px) saturate(120%);
-                border-top: 1px solid rgba(80, 255, 120, 0.4); border-left: 1px solid rgba(80, 255, 120, 0.2);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.5); border-right: 1px solid rgba(0, 0, 0, 0.5);
-                border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #e2e8f0;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-top: 12px solid transparent;
+                border-image: repeating-linear-gradient(45deg, #000 0, #000 10px, #fff 10px, #fff 20px) 12 stretch;
+                border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #e2e8f0;
                 font-family: 'Inter', sans-serif; z-index: 999999; display: flex; flex-direction: column;
                 transition: opacity 0.3s ease; opacity: 0.85; user-select: none;
+                overflow: hidden;
             }
             #knd-hud-wrapper:hover { opacity: 1; }
             #knd-hud-header { padding: 10px 15px; background: rgba(15,20,25,0.4); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: grab; display: flex; justify-content: space-between; align-items: center; }
             #knd-hud-header:active { cursor: grabbing; }
-            .knd-header-loc { font-size: 11px; text-transform: uppercase; color: #94a3b8; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+            .knd-header-loc { font-size: 11px; text-transform: uppercase; color: #94a3b8; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: monospace; }
 
-            .knd-header-api { display: flex; gap: 4px; align-items: center; font-size: 10px; font-weight: bold; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; margin-right: 5px; cursor: default; }
-            .knd-status-icon { padding: 2px 4px; border-radius: 3px; color: #fff; text-shadow: 0 0 3px #000; opacity: 0.5; transition: all 0.3s; }
-            .knd-status-icon.online { opacity: 1; background: rgba(74, 222, 128, 0.2); color: #4ade80; box-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
-            .knd-status-icon.error { opacity: 1; background: rgba(239, 68, 68, 0.2); color: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
-            .knd-status-icon.testing { opacity: 1; color: #eab308; animation: pulseDanger 1s infinite; }
-            .knd-token-count { margin-left: 4px; color: #94a3b8; font-family: monospace; }
+            .knd-header-api { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px; margin-right: 5px; cursor: default; border: 1px solid rgba(255,255,255,0.1); }
+            .knd-api-group { display: flex; align-items: center; gap: 2px; }
+            .knd-api-label { color: #94a3b8; font-size: 10px; }
+            .knd-status-icon { border-radius: 50%; opacity: 0.5; transition: all 0.3s; font-size: 10px; }
+            .knd-status-icon.online { opacity: 1; filter: drop-shadow(0 0 4px #4ade80); }
+            .knd-status-icon.error { opacity: 1; filter: drop-shadow(0 0 4px #ef4444); }
+            .knd-status-icon.testing { opacity: 1; animation: pulseDanger 1s infinite; filter: drop-shadow(0 0 4px #eab308); }
+            .knd-token-count { margin-left: 4px; color: #94a3b8; font-family: monospace; font-size: 10px; }
 
             .knd-header-controls { flex: 1; text-align: right; display: flex; justify-content: flex-end; gap: 8px; }
             .knd-ctrl-btn { cursor: pointer; font-size: 14px; color: #94a3b8; transition: all 0.2s; padding: 0 2px; }
@@ -126,15 +130,15 @@
             <div id="knd-hud-header">
                 <div class="knd-header-loc" id="knd-loc-text">📍 ${gameState.loc}</div>
                 <div class="knd-header-api" title="API Status & Tokens">
-                    <span class="knd-status-icon" id="icon-k">K</span>
-                    <span class="knd-status-icon" id="icon-c">C</span>
-                    <span class="knd-status-icon" id="icon-g">G</span>
+                    <div class="knd-api-group"><span class="knd-api-label">K:</span><span class="knd-status-icon error" id="icon-k">🔴</span></div>
+                    <div class="knd-api-group"><span class="knd-api-label">C:</span><span class="knd-status-icon error" id="icon-c">🔴</span></div>
+                    <div class="knd-api-group"><span class="knd-api-label">G:</span><span class="knd-status-icon error" id="icon-g">🔴</span></div>
                     <span class="knd-token-count" id="knd-tokens">0T</span>
                 </div>
                 <div class="knd-header-controls">
-                    <span class="knd-ctrl-btn" id="knd-journal-toggle" title="Diário de Journal">📝</span>
-                    <span class="knd-ctrl-btn" id="knd-config-toggle" title="Configurações">⚙️</span>
-                    <span class="knd-ctrl-btn" id="knd-min-toggle" title="Minimizar">—</span>
+                    <span class="knd-ctrl-btn" id="knd-journal-toggle" title="Diário de Journal">🎬</span>
+                    <span class="knd-ctrl-btn" id="knd-config-toggle" title="Configurações">🎞️</span>
+                    <span class="knd-ctrl-btn" id="knd-min-toggle" title="Minimizar">🔽</span>
                 </div>
             </div>
             <div id="knd-hud-body"></div>
@@ -395,7 +399,7 @@
         minBtn.addEventListener('mousedown', e => e.stopPropagation());
         minBtn.addEventListener('click', () => {
             hud.classList.toggle('minimized');
-            minBtn.innerText = hud.classList.contains('minimized') ? '+' : '—';
+            minBtn.innerText = hud.classList.contains('minimized') ? '🔼' : '🔽';
         });
 
         header.addEventListener('mousedown', e => {
@@ -488,9 +492,14 @@
             const icon = document.getElementById(`icon-${type}`);
             const targetVal = document.getElementById(`inp-api-${type}`).value.trim();
             const keyK = document.getElementById('inp-api-k').value.trim();
-            if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
+            if(!targetVal) {
+                icon.className = 'knd-status-icon error';
+                icon.innerText = '🔴';
+                return;
+            }
 
             icon.className = 'knd-status-icon testing';
+            icon.innerText = '🟡';
             try {
                 let success = false;
                 if (type === 'g') {
@@ -513,9 +522,13 @@
                     });
                     success = res.ok;
                 }
-                icon.className = success ? 'online' : 'error';
+                icon.className = success ? 'knd-status-icon online' : 'knd-status-icon error';
+                icon.innerText = success ? '🟢' : '🔴';
                 if(success) gameState.apiKeys[type] = targetVal;
-            } catch (err) { icon.className = 'knd-status-icon error'; }
+            } catch (err) {
+                icon.className = 'knd-status-icon error';
+                icon.innerText = '🔴';
+            }
         };
 
         document.getElementById('btn-ping-k').addEventListener('click', () => pingAPI('k'));
