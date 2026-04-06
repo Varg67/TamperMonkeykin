@@ -1,4 +1,4 @@
-# Extensão Cinematica RP Beta 0.1
+# Cinematic RP Extension Beta 0.1
 
 This repository contains the **Kindroid RP Framework V4** Tampermonkey script.
 
@@ -15,7 +15,7 @@ Tampermonkey is a popular userscript manager available for most major browsers.
 
 ### Step 2: Add the Script
 Once Tampermonkey is installed, you can add the script:
-1. Open the raw version of the script by clicking [here](extensao-cinematica-rp-beta0.1.user.js) (or by manually navigating to `extensao-cinematica-rp-beta0.1.user.js` in this repository and viewing the raw file).
+1. Open the raw version of the script by clicking [here](cinematic-rp-extension-beta0.1.user.js) (or by manually navigating to `cinematic-rp-extension-beta0.1.user.js` in this repository and viewing the raw file).
 2. Tampermonkey will automatically detect the `.user.js` extension and open an installation page.
 3. Review the code if you'd like, and then click the **"Install"** button on the Tampermonkey page.
 4. Refresh your Kindroid page. The HUD should now be active!
