@@ -420,14 +420,14 @@
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        ['k', 'c', 'g'].forEach(type => {
+            document.getElementById(`inp-api-${type}`).value = savedKeys[type];
+        });
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
-            gameState.apiKeys.k = document.getElementById('inp-api-k').value;
-            gameState.apiKeys.c = document.getElementById('inp-api-c').value;
-            gameState.apiKeys.g = document.getElementById('inp-api-g').value;
+            ['k', 'c', 'g'].forEach(type => {
+                gameState.apiKeys[type] = document.getElementById(`inp-api-${type}`).value;
+            });
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
             showLog('[CHAVES SALVAS]', '#4ade80');
         });
@@ -518,9 +518,9 @@
             } catch (err) { icon.className = 'knd-status-icon error'; }
         };
 
-        document.getElementById('btn-ping-k').addEventListener('click', () => pingAPI('k'));
-        document.getElementById('btn-ping-c').addEventListener('click', () => pingAPI('c'));
-        document.getElementById('btn-ping-g').addEventListener('click', () => pingAPI('g'));
+        ['k', 'c', 'g'].forEach(type => {
+            document.getElementById(`btn-ping-${type}`).addEventListener('click', () => pingAPI(type));
+        });
     };
 
     // ==========================================
