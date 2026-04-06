@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Kindroid RP Framework V4 (Final System)
+// @name         Kindroid Cinematic RP Framework Beta 0.2
 // @namespace    http://tampermonkey.net/
-// @version      4.1
-// @description  Liquid Glass RPG HUD + Journal Tool + API Pinger
+// @version      0.2
+// @description  Glassmorphism RPG HUD + Journal Tool + API Pinger
 // @author       Dev LLM Game & You
 // @match        *://*.kindroid.ai/*
 // @grant        GM_getValue
@@ -19,7 +19,7 @@
     // 1. STATE & CONFIGURATION MATRIX
     // ==========================================
     const gameState = {
-        loc: "Aguardando Init...",
+        loc: "Waiting Init...",
         mood: { icon: "😐", text: "NEUTRAL", color: "#ecc94b" },
         tokens: 0,
         apiKeys: { k: "", c: "", g: "" },
@@ -38,16 +38,16 @@
     };
 
     const statConfig = {
-        hunger:   { label: "FOME",    color: "#f97316", danger: "#ea580c" },
-        thirst:   { label: "SEDE",    color: "#06b6d4", danger: "#dc2626" },
-        energy:   { label: "ENERGIA", color: "#4ade80", danger: "#eab308" },
-        hygiene:  { label: "HIGIENE", color: "#e2e8f0", danger: "#b45309" },
-        stress:   { label: "STRESS",  color: "#7c3aed", danger: "#ef4444" },
-        connect:  { label: "CONEXÃO", color: "#3b82f6", danger: "#1e3a8a" },
-        affection:{ label: "AFEIÇÃO", color: "#ec4899", danger: "#be185d" },
-        trust:    { label: "CONFIANÇA",color: "#eab308", danger: "#a16207" },
-        libido:   { label: "LIBIDO",  color: "#dc2626", danger: "#ff0000" },
-        pleasure: { label: "PRAZER",  color: "#d946ef", danger: "#ffffff" }
+        hunger:   { label: "HUNGER",    color: "#d97706", danger: "#b45309" }, // Taurus: Earth/Brown-Orange
+        thirst:   { label: "THIRST",    color: "#0284c7", danger: "#0369a1" }, // Cancer: Deep Blue
+        energy:   { label: "ENERGY",    color: "#facc15", danger: "#eab308" }, // Leo: Yellow
+        hygiene:  { label: "HYGIENE",   color: "#f8fafc", danger: "#cbd5e1" }, // Virgo: Clean White
+        stress:   { label: "STRESS",    color: "#9333ea", danger: "#7e22ce" }, // Scorpio: Dark Purple
+        connect:  { label: "CONNECTION",color: "#38bdf8", danger: "#0284c7" }, // Gemini: Light Blue
+        affection:{ label: "AFFECTION", color: "#f472b6", danger: "#be185d" }, // Libra: Pink
+        trust:    { label: "TRUST",     color: "#fbbf24", danger: "#d97706" }, // Sagittarius: Gold
+        libido:   { label: "LIBIDO",    color: "#ef4444", danger: "#b91c1c" }, // Aries: Red
+        pleasure: { label: "PLEASURE",  color: "#d946ef", danger: "#c026d3" }  // Venus: Magenta
     };
 
     // ==========================================
@@ -58,15 +58,27 @@
         style.textContent = `
             #knd-hud-wrapper {
                 position: fixed; top: 20px; right: 20px; width: 360px;
-                background: rgba(35, 40, 50, 0.85); backdrop-filter: blur(16px) saturate(120%);
-                border-top: 1px solid rgba(80, 255, 120, 0.4); border-left: 1px solid rgba(80, 255, 120, 0.2);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.5); border-right: 1px solid rgba(0, 0, 0, 0.5);
-                border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #e2e8f0;
+                background: rgba(20, 25, 30, 0.6); backdrop-filter: blur(12px) saturate(150%);
+                border: 1px solid rgba(80, 255, 120, 0.3);
+                border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 10px rgba(80, 255, 120, 0.1); color: #e2e8f0;
                 font-family: 'Inter', sans-serif; z-index: 999999; display: flex; flex-direction: column;
-                transition: opacity 0.3s ease; opacity: 0.85; user-select: none;
+                transition: opacity 0.3s ease; opacity: 0.85; user-select: none; overflow: hidden;
             }
             #knd-hud-wrapper:hover { opacity: 1; }
-            #knd-hud-header { padding: 10px 15px; background: rgba(15,20,25,0.4); border-bottom: 1px solid rgba(255,255,255,0.05); cursor: grab; display: flex; justify-content: space-between; align-items: center; }
+            #knd-hud-header {
+                padding: 10px 15px;
+                background: repeating-linear-gradient(
+                    -45deg,
+                    rgba(10, 10, 10, 0.9),
+                    rgba(10, 10, 10, 0.9) 10px,
+                    rgba(240, 240, 240, 0.9) 10px,
+                    rgba(240, 240, 240, 0.9) 20px
+                );
+                border-bottom: 2px solid #000; cursor: grab; display: flex; justify-content: space-between; align-items: center;
+            }
+            #knd-hud-header > div {
+                background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px;
+            }
             #knd-hud-header:active { cursor: grabbing; }
             .knd-header-loc { font-size: 11px; text-transform: uppercase; color: #94a3b8; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
@@ -119,75 +131,102 @@
     // ==========================================
     // 3. UI RENDER ENGINE
     // ==========================================
+    const domCache = {};
+    const createElement = (tag, id, className, textContent, attributes = {}) => {
+        const el = document.createElement(tag);
+        if (id) el.id = id;
+        if (className) el.className = className;
+        if (textContent) el.textContent = textContent;
+        for (const [k, v] of Object.entries(attributes)) {
+            el.setAttribute(k, v);
+        }
+        return el;
+    };
+
     const createHUD = () => {
-        const hud = document.createElement('div');
-        hud.id = 'knd-hud-wrapper';
-        hud.innerHTML = `
-            <div id="knd-hud-header">
-                <div class="knd-header-loc" id="knd-loc-text">📍 ${gameState.loc}</div>
-                <div class="knd-header-api" title="API Status & Tokens">
-                    <span class="knd-status-icon" id="icon-k">K</span>
-                    <span class="knd-status-icon" id="icon-c">C</span>
-                    <span class="knd-status-icon" id="icon-g">G</span>
-                    <span class="knd-token-count" id="knd-tokens">0T</span>
-                </div>
-                <div class="knd-header-controls">
-                    <span class="knd-ctrl-btn" id="knd-journal-toggle" title="Diário de Journal">📝</span>
-                    <span class="knd-ctrl-btn" id="knd-config-toggle" title="Configurações">⚙️</span>
-                    <span class="knd-ctrl-btn" id="knd-min-toggle" title="Minimizar">—</span>
-                </div>
-            </div>
-            <div id="knd-hud-body"></div>
+        const hud = createElement('div', 'knd-hud-wrapper');
 
-            <!-- PAINEL DE CONFIGURAÇÕES -->
-            <div id="knd-hud-settings">
-                <div class="knd-settings-row">
-                    <label>KINDROID API KEY (Geral)</label>
-                    <div class="knd-input-group">
-                        <input type="password" class="knd-input" id="inp-api-k" placeholder="sk-kindroid...">
-                        <button class="knd-btn-ping" id="btn-ping-k">PING</button>
-                    </div>
-                </div>
-                <div class="knd-settings-row">
-                    <label>KIN ID (Personagem)</label>
-                    <div class="knd-input-group">
-                        <input type="password" class="knd-input" id="inp-api-c" placeholder="Kin ID...">
-                        <button class="knd-btn-ping" id="btn-ping-c">PING</button>
-                    </div>
-                </div>
-                <div class="knd-settings-row">
-                    <label>GEMINI API KEY</label>
-                    <div class="knd-input-group">
-                        <input type="password" class="knd-input" id="inp-api-g" placeholder="AIzaSy...">
-                        <button class="knd-btn-ping" id="btn-ping-g">PING</button>
-                    </div>
-                </div>
-                <button class="knd-btn-action" id="knd-save-keys">SALVAR CHAVES</button>
-            </div>
+        // Header
+        const header = createElement('div', 'knd-hud-header');
+        const locText = createElement('div', 'knd-loc-text', 'knd-header-loc', `📍 ${gameState.loc}`);
 
-            <!-- PAINEL DE JOURNAL -->
-            <div id="knd-hud-journal">
-                <div class="knd-settings-row">
-                    <label>NOVA ENTRADA NO DIÁRIO</label>
-                    <textarea class="knd-input knd-textarea" id="knd-journal-text" placeholder="O que aconteceu hoje? Descreva o fato importante..."></textarea>
-                </div>
-                <div class="knd-settings-row">
-                    <label>KEYPHRASES (Separe por vírgula)</label>
-                    <input type="text" class="knd-input" id="knd-journal-keys" placeholder="ex: viagem, briga, segredo">
-                </div>
-                <button class="knd-btn-action green" id="knd-send-journal">ENVIAR PARA MEMÓRIA</button>
-            </div>
+        const apiWrapper = createElement('div', null, 'knd-header-api', null, {title: 'API Status & Tokens'});
+        apiWrapper.appendChild(createElement('span', 'icon-k', 'knd-status-icon', 'K'));
+        apiWrapper.appendChild(createElement('span', 'icon-c', 'knd-status-icon', 'C'));
+        apiWrapper.appendChild(createElement('span', 'icon-g', 'knd-status-icon', 'G'));
+        apiWrapper.appendChild(createElement('span', 'knd-tokens', 'knd-token-count', '0T'));
 
-            <div id="knd-hud-footer"></div>
-        `;
+        const controls = createElement('div', null, 'knd-header-controls');
+        controls.appendChild(createElement('span', 'knd-journal-toggle', 'knd-ctrl-btn', '📝', {title: 'Journal Diary'}));
+        controls.appendChild(createElement('span', 'knd-config-toggle', 'knd-ctrl-btn', '⚙️', {title: 'Settings'}));
+        controls.appendChild(createElement('span', 'knd-min-toggle', 'knd-ctrl-btn', '—', {title: 'Minimize'}));
+
+        header.appendChild(locText);
+        header.appendChild(apiWrapper);
+        header.appendChild(controls);
+        hud.appendChild(header);
+
+        // Body
+        hud.appendChild(createElement('div', 'knd-hud-body'));
+
+        // Settings Panel
+        const settingsPanel = createElement('div', 'knd-hud-settings');
+
+        const createSettingRow = (labelText, inputId, placeholder, btnId) => {
+            const row = createElement('div', null, 'knd-settings-row');
+            row.appendChild(createElement('label', null, null, labelText));
+            const group = createElement('div', null, 'knd-input-group');
+            group.appendChild(createElement('input', inputId, 'knd-input', null, {type: 'password', placeholder}));
+            group.appendChild(createElement('button', btnId, 'knd-btn-ping', 'PING'));
+            row.appendChild(group);
+            return row;
+        };
+
+        settingsPanel.appendChild(createSettingRow('KINDROID API KEY (General)', 'inp-api-k', 'sk-kindroid...', 'btn-ping-k'));
+        settingsPanel.appendChild(createSettingRow('KIN ID (Character)', 'inp-api-c', 'Kin ID...', 'btn-ping-c'));
+        settingsPanel.appendChild(createSettingRow('GEMINI API KEY', 'inp-api-g', 'AIzaSy...', 'btn-ping-g'));
+        settingsPanel.appendChild(createElement('button', 'knd-save-keys', 'knd-btn-action', 'SAVE KEYS'));
+
+        hud.appendChild(settingsPanel);
+
+        // Journal Panel
+        const journalPanel = createElement('div', 'knd-hud-journal');
+
+        const jRow1 = createElement('div', null, 'knd-settings-row');
+        jRow1.appendChild(createElement('label', null, null, 'NEW JOURNAL ENTRY'));
+        jRow1.appendChild(createElement('textarea', 'knd-journal-text', 'knd-input knd-textarea', null, {placeholder: 'What happened today? Describe the important event...'}));
+        journalPanel.appendChild(jRow1);
+
+        const jRow2 = createElement('div', null, 'knd-settings-row');
+        jRow2.appendChild(createElement('label', null, null, 'KEYPHRASES (Comma separated)'));
+        jRow2.appendChild(createElement('input', 'knd-journal-keys', 'knd-input', null, {type: 'text', placeholder: 'ex: travel, fight, secret'}));
+        journalPanel.appendChild(jRow2);
+
+        journalPanel.appendChild(createElement('button', 'knd-send-journal', 'knd-btn-action green', 'SEND TO MEMORY'));
+
+        hud.appendChild(journalPanel);
+
+        // Footer
+        hud.appendChild(createElement('div', 'knd-hud-footer'));
+
         document.body.appendChild(hud);
         return hud;
     };
 
     const buildStatBar = (key, config) => {
-        const wrapper = document.createElement('div'); wrapper.className = 'knd-stat-container'; wrapper.id = `stat-${key}`;
-        wrapper.innerHTML = `<div class="knd-stat-header"><span>${config.label}</span> <span id="val-${key}">0%</span></div>
-                             <div class="knd-blocks-wrapper" id="blocks-${key}">${'<div class="knd-block"></div>'.repeat(10)}</div>`;
+        const wrapper = createElement('div', `stat-${key}`, 'knd-stat-container');
+
+        const header = createElement('div', null, 'knd-stat-header');
+        header.appendChild(createElement('span', null, null, config.label));
+        header.appendChild(createElement('span', `val-${key}`, null, '0%'));
+        wrapper.appendChild(header);
+
+        const blocksWrapper = createElement('div', `blocks-${key}`, 'knd-blocks-wrapper');
+        for(let i=0; i<10; i++) {
+            blocksWrapper.appendChild(createElement('div', null, 'knd-block'));
+        }
+        wrapper.appendChild(blocksWrapper);
+
         return wrapper;
     };
 
@@ -206,17 +245,28 @@
         body.appendChild(buildStatBar('pleasure', statConfig.pleasure));
     };
 
+    const cacheDOM = () => {
+        domCache.locText = document.getElementById('knd-loc-text');
+        domCache.tokens = document.getElementById('knd-tokens');
+        domCache.pleasureStat = document.getElementById('stat-pleasure');
+
+        Object.keys(gameState.stats).forEach(key => {
+            domCache[`val-${key}`] = document.getElementById(`val-${key}`);
+            domCache[`blocks-${key}`] = document.getElementById(`blocks-${key}`).children;
+        });
+    };
+
     const renderState = () => {
-        document.getElementById('knd-loc-text').innerText = `📍 ${gameState.loc}`;
-        document.getElementById('knd-tokens').innerText = gameState.tokens + 'T';
+        domCache.locText.textContent = `📍 ${gameState.loc}`;
+        domCache.tokens.textContent = gameState.tokens + 'T';
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
-            const blocks = document.getElementById(`blocks-${key}`).children;
+            const blocks = domCache[`blocks-${key}`];
 
-            document.getElementById(`val-${key}`).innerText = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') document.getElementById('stat-pleasure').style.display = stat.val > 0 ? 'flex' : 'none';
+            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
+            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
@@ -239,7 +289,7 @@
     const showLog = (text, color) => {
         const footer = document.getElementById('knd-hud-footer');
         const span = document.createElement('span');
-        span.className = 'knd-floating-text'; span.style.color = color; span.innerText = text;
+        span.className = 'knd-floating-text'; span.style.color = color; span.textContent = text;
         footer.appendChild(span);
         setTimeout(() => { if(footer.contains(span)) span.remove(); }, 2500);
     };
@@ -429,7 +479,7 @@
             gameState.apiKeys.c = document.getElementById('inp-api-c').value;
             gameState.apiKeys.g = document.getElementById('inp-api-g').value;
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
-            showLog('[CHAVES SALVAS]', '#4ade80');
+            showLog('[KEYS SAVED]', '#4ade80');
         });
 
         const gmFetch = (url, options) => {
@@ -445,18 +495,18 @@
             });
         };
 
-        // ACTION: ENVIAR JOURNAL
+        // ACTION: SEND JOURNAL
         document.getElementById('knd-send-journal').addEventListener('click', async () => {
             const entry = document.getElementById('knd-journal-text').value.trim();
             const keysRaw = document.getElementById('knd-journal-keys').value.trim();
 
             if(!entry || !gameState.apiKeys.k || !gameState.apiKeys.c) {
-                showLog('[ERRO: FALTA DADOS OU CHAVES]', '#ef4444');
+                showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
                 return;
             }
 
             const keyphrases = keysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            showLog('[ENVIANDO PARA MEMÓRIA...]', '#eab308');
+            showLog('[SENDING TO MEMORY...]', '#eab308');
 
             try {
                 const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
@@ -473,14 +523,14 @@
                 });
 
                 if(res.ok) {
-                    showLog('[MEMÓRIA GRAVADA COM SUCESSO]', '#4ade80');
+                    showLog('[MEMORY SAVED SUCCESSFULLY]', '#4ade80');
                     document.getElementById('knd-journal-text').value = '';
                     document.getElementById('knd-journal-keys').value = '';
                 } else {
                     throw new Error();
                 }
             } catch (e) {
-                showLog('[FALHA AO GRAVAR MEMÓRIA]', '#ef4444');
+                showLog('[FAILED TO SAVE MEMORY]', '#ef4444');
             }
         });
 
@@ -530,11 +580,12 @@
         injectCSS();
         const hud = createHUD();
         assembleBody();
+        cacheDOM();
         initDraggable(hud);
         initToolsLogic();
         renderState();
         initObserver();
-        console.log("🎬 Kindroid RP System V4.1: JOURNAL TOOL ADDED.");
+        console.log("🎬 Kindroid Cinematic RP System Beta 0.2: INITIALIZED.");
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
