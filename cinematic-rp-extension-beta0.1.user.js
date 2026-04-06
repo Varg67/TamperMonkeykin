@@ -19,7 +19,7 @@
     // 1. STATE & CONFIGURATION MATRIX
     // ==========================================
     const gameState = {
-        loc: "Aguardando Init...",
+        loc: "Waiting for Init...",
         mood: { icon: "😐", text: "NEUTRAL", color: "#ecc94b" },
         tokens: 0,
         apiKeys: { k: "", c: "", g: "" },
@@ -38,16 +38,16 @@
     };
 
     const statConfig = {
-        hunger:   { label: "FOME",    color: "#f97316", danger: "#ea580c" },
-        thirst:   { label: "SEDE",    color: "#06b6d4", danger: "#dc2626" },
-        energy:   { label: "ENERGIA", color: "#4ade80", danger: "#eab308" },
-        hygiene:  { label: "HIGIENE", color: "#e2e8f0", danger: "#b45309" },
+        hunger:   { label: "HUNGER",    color: "#f97316", danger: "#ea580c" },
+        thirst:   { label: "THIRST",    color: "#06b6d4", danger: "#dc2626" },
+        energy:   { label: "ENERGY", color: "#4ade80", danger: "#eab308" },
+        hygiene:  { label: "HYGIENE", color: "#e2e8f0", danger: "#b45309" },
         stress:   { label: "STRESS",  color: "#7c3aed", danger: "#ef4444" },
-        connect:  { label: "CONEXÃO", color: "#3b82f6", danger: "#1e3a8a" },
-        affection:{ label: "AFEIÇÃO", color: "#ec4899", danger: "#be185d" },
-        trust:    { label: "CONFIANÇA",color: "#eab308", danger: "#a16207" },
+        connect:  { label: "CONNECTION", color: "#3b82f6", danger: "#1e3a8a" },
+        affection:{ label: "AFFECTION", color: "#ec4899", danger: "#be185d" },
+        trust:    { label: "TRUST",color: "#eab308", danger: "#a16207" },
         libido:   { label: "LIBIDO",  color: "#dc2626", danger: "#ff0000" },
-        pleasure: { label: "PRAZER",  color: "#d946ef", danger: "#ffffff" }
+        pleasure: { label: "PLEASURE",  color: "#d946ef", danger: "#ffffff" }
     };
 
     // ==========================================
@@ -132,24 +132,24 @@
                     <span class="knd-token-count" id="knd-tokens">0T</span>
                 </div>
                 <div class="knd-header-controls">
-                    <span class="knd-ctrl-btn" id="knd-journal-toggle" title="Diário de Journal">📝</span>
-                    <span class="knd-ctrl-btn" id="knd-config-toggle" title="Configurações">⚙️</span>
-                    <span class="knd-ctrl-btn" id="knd-min-toggle" title="Minimizar">—</span>
+                    <span class="knd-ctrl-btn" id="knd-journal-toggle" title="Journal Diary">📝</span>
+                    <span class="knd-ctrl-btn" id="knd-config-toggle" title="Settings">⚙️</span>
+                    <span class="knd-ctrl-btn" id="knd-min-toggle" title="Minimize">—</span>
                 </div>
             </div>
             <div id="knd-hud-body"></div>
 
-            <!-- PAINEL DE CONFIGURAÇÕES -->
+            <!-- SETTINGS PANEL -->
             <div id="knd-hud-settings">
                 <div class="knd-settings-row">
-                    <label>KINDROID API KEY (Geral)</label>
+                    <label>KINDROID API KEY (General)</label>
                     <div class="knd-input-group">
                         <input type="password" class="knd-input" id="inp-api-k" placeholder="sk-kindroid...">
                         <button class="knd-btn-ping" id="btn-ping-k">PING</button>
                     </div>
                 </div>
                 <div class="knd-settings-row">
-                    <label>KIN ID (Personagem)</label>
+                    <label>KIN ID (Character)</label>
                     <div class="knd-input-group">
                         <input type="password" class="knd-input" id="inp-api-c" placeholder="Kin ID...">
                         <button class="knd-btn-ping" id="btn-ping-c">PING</button>
@@ -162,20 +162,20 @@
                         <button class="knd-btn-ping" id="btn-ping-g">PING</button>
                     </div>
                 </div>
-                <button class="knd-btn-action" id="knd-save-keys">SALVAR CHAVES</button>
+                <button class="knd-btn-action" id="knd-save-keys">SAVE KEYS</button>
             </div>
 
-            <!-- PAINEL DE JOURNAL -->
+            <!-- JOURNAL PANEL -->
             <div id="knd-hud-journal">
                 <div class="knd-settings-row">
-                    <label>NOVA ENTRADA NO DIÁRIO</label>
-                    <textarea class="knd-input knd-textarea" id="knd-journal-text" placeholder="O que aconteceu hoje? Descreva o fato importante..."></textarea>
+                    <label>NEW JOURNAL ENTRY</label>
+                    <textarea class="knd-input knd-textarea" id="knd-journal-text" placeholder="What happened today? Describe the important fact..."></textarea>
                 </div>
                 <div class="knd-settings-row">
-                    <label>KEYPHRASES (Separe por vírgula)</label>
-                    <input type="text" class="knd-input" id="knd-journal-keys" placeholder="ex: viagem, briga, segredo">
+                    <label>KEYPHRASES (Comma separated)</label>
+                    <input type="text" class="knd-input" id="knd-journal-keys" placeholder="e.g.: trip, fight, secret">
                 </div>
-                <button class="knd-btn-action green" id="knd-send-journal">ENVIAR PARA MEMÓRIA</button>
+                <button class="knd-btn-action green" id="knd-send-journal">SEND TO MEMORY</button>
             </div>
 
             <div id="knd-hud-footer"></div>
@@ -429,7 +429,7 @@
             gameState.apiKeys.c = document.getElementById('inp-api-c').value;
             gameState.apiKeys.g = document.getElementById('inp-api-g').value;
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
-            showLog('[CHAVES SALVAS]', '#4ade80');
+            showLog('[KEYS SAVED]', '#4ade80');
         });
 
         const gmFetch = (url, options) => {
@@ -445,18 +445,18 @@
             });
         };
 
-        // ACTION: ENVIAR JOURNAL
+        // ACTION: SEND JOURNAL
         document.getElementById('knd-send-journal').addEventListener('click', async () => {
             const entry = document.getElementById('knd-journal-text').value.trim();
             const keysRaw = document.getElementById('knd-journal-keys').value.trim();
 
             if(!entry || !gameState.apiKeys.k || !gameState.apiKeys.c) {
-                showLog('[ERRO: FALTA DADOS OU CHAVES]', '#ef4444');
+                showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
                 return;
             }
 
             const keyphrases = keysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            showLog('[ENVIANDO PARA MEMÓRIA...]', '#eab308');
+            showLog('[SENDING TO MEMORY...]', '#eab308');
 
             try {
                 const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
@@ -473,14 +473,14 @@
                 });
 
                 if(res.ok) {
-                    showLog('[MEMÓRIA GRAVADA COM SUCESSO]', '#4ade80');
+                    showLog('[MEMORY RECORDED SUCCESSFULLY]', '#4ade80');
                     document.getElementById('knd-journal-text').value = '';
                     document.getElementById('knd-journal-keys').value = '';
                 } else {
                     throw new Error();
                 }
             } catch (e) {
-                showLog('[FALHA AO GRAVAR MEMÓRIA]', '#ef4444');
+                showLog('[FAILED TO RECORD MEMORY]', '#ef4444');
             }
         });
 
@@ -534,7 +534,7 @@
         initToolsLogic();
         renderState();
         initObserver();
-        console.log("🎬 Kindroid RP System V4.1: JOURNAL TOOL ADDED.");
+        console.log("🎬 Cinematic RP System V4.1: JOURNAL TOOL ADDED.");
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
