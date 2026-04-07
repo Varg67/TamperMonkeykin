@@ -374,11 +374,11 @@ function processSceneCheckpoint({ previousBuffer, flashResponse }) {
   const kindroid = getNarrativePayload(parsed.threshold);
   const ui = getUIPayload(parsed.threshold, previousBuffer.markers);
 
-  // 3. Monta novo buffer mantendo o contexto mas assumindo o novo Threshold
+  // 3. Monta novo buffer assumindo o novo Threshold e limpando os eventos da cena anterior
   const nextBuffer = createSceneBuffer({
     threshold:    parsed.threshold,
     lastMealType: previousBuffer.lastMealType,
-    markers:      previousBuffer.markers,
+    markers:      [], // Reseta os marcadores da cena
   });
 
   return { kindroid, ui, nextBuffer };

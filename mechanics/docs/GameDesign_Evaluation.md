@@ -96,6 +96,18 @@ Como o motor lida com status sensíveis (Prazer e Libido), a arquitetura exige u
 
 ---
 
-## 7. Próximos Passos Gerais
+## 7. O Paradigma de Cortes de Cena (Módulo de Energia)
 
-A refatoração inicial do `hunger_module.js` foi concluída com sucesso. O próximo passo lógico é codificar a exportação desses "Modificadores Globais" no módulo de fome, para que a engine central possa distribuir o Efeito Dominó para a Energia e o Humor.
+Para garantir que o LLM entenda nativamente a passagem do tempo sem o uso de relógios estritos, a engine adota o conceito de **"Cenas"** e **"Transições Cinemáticas"**.
+
+Isto é mais evidente no módulo de **Energia (`energy_module.js`)**:
+* Os 5 limiares de Energia são: `HYPER`, `AWAKE`, `TIRED`, `EXHAUSTED` e `COLLAPSING`.
+* Em vez de drenar Energia contando horas ativas, o sistema registra "Marcadores de Roteiro": `scene_cut_long` (corta para a tarde/noite), `scene_cut_short` ou `action_scene`.
+* A inferência qualitativa no Gemini lê esse contexto de script cinematográfico, usa o seu "senso comum" alimentado em peças e filmes, e decreta a queda ou ganho de energia adequadamente.
+* O "Efeito Dominó" também é espelhado aqui: A Energia exporta `mood_buffs` de cansaço ou revigoramento, e recebe `cross_debuffs` ativamente da Fome (como `food_coma` ou `starving`), aumentando a punição nas ações caso o personagem não tenha se alimentado.
+
+---
+
+## 8. Próximos Passos Gerais
+
+A refatoração do `hunger_module.js`, a implementação do Perfil e a inclusão do `energy_module.js` estabeleceram a tríade fundacional da engine. O próximo passo lógico é codificar os sistemas de Saúde ou Humor baseados nas premissas que validamos.

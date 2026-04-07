@@ -69,7 +69,7 @@ function loadProfile() {
  */
 function saveProfile(name, age, role = "Protagonista") {
   const safeAge = Math.max(18, Math.min(120, parseInt(age, 10) || 18));
-  const cleanName = name.trim();
+  const cleanName = (name || "Player").trim();
 
   // Filtro Anti-Deepfake / Blacklist
   const isBanned = CELEBRITY_BLACKLIST.some(celebrity =>
