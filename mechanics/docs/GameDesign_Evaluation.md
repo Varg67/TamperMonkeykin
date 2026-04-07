@@ -139,6 +139,17 @@ A Saúde (`health_module.js`) é projetada para ser o status mais punitivo da En
 
 ---
 
-## 10. Próximos Passos Gerais
+## 10. A Arquitetura Direcional (Confiança e Amor)
 
-A base biológica e de auto-preservação (Fome, Energia, Aparência, Saúde e Gatekeeper) está concluída. A engine agora está robusta o suficiente para receber os módulos de Relacionamento Emocional (*Mood*, *Trust*, *Love*) e Impulsos Românticos (*Libido*, *Pleasure*).
+Diferente de status biológicos (Energia, Fome, Saúde) e sociais passivos (Aparência), os módulos como a **Confiança** (`trust_module.js`) inauguram a "Arquitetura Direcional" da Engine.
+
+* **O Status Vetorial:** Um personagem não é apenas "Confiável" ou "Paranoico" de forma genérica. O status pertence a um "Alvo" (`targetName`). A injeção narrativa no Kindroid diz explicitamente: *"Em relação a Alex: Confiança absoluta."*
+* **Limiares de Trust:** `DEVOTED`, `TRUSTING`, `NEUTRAL`, `SUSPICIOUS`, `PARANOID`.
+* **Soma Algébrica Vetorial:** Os buffs e debuffs de Confiança seguem a mesma regra dos 10 blocos visuais, porém com pesos inversos (trair, `betrayal`, retira blocos pesadamente; salvar a vida soma blocos rapidamente).
+* **Dominó no Amor:** A Confiança baixa age como um Hard-Block social para interações de romance (ninguém se apaixona por alguém que não confia, exceto em tropes abusivos intencionalmente ativados pelo usuário). A Confiança alta (`DEVOTED`) emite o modificador `open_heart`, facilitando o acúmulo da barra de Amor (Love).
+
+---
+
+## 11. Próximos Passos Gerais
+
+A base biológica (Fome, Energia, Saúde), a base social passiva (Aparência), e a fundação direcional (Confiança) estão concluídas. O terreno está completamente asfaltado para os módulos emocionais absolutos (Mood) e os românticos restritos (Love, Pleasure, Libido).
