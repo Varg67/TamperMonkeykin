@@ -47,9 +47,23 @@ Para manter custos de API quase nulos e respeitar as responsabilidades (O Gemini
 
 ---
 
-## 4. Próximos Passos para o Código
+## 4. O Manifesto Qualitativo (Dicotomia Front-end vs Back-end)
 
-Para adaptar `mechanics/kin/hunger_module.js` a esta nova realidade, devemos:
-1. Remover cálculos baseados em tempo e `parseNarrativeHours`.
-2. Adicionar o conceito de **Scene Skips** e **Event Triggers** em vez de marcadores temporais passivos.
-3. Consolidar o design em que a UI seja impulsionada pelas Micro-Inferências (o Gemini traduzindo o "O quê" em "Categoria", e o JS alterando a barra imediatamente).
+A arquitetura estabelece uma separação absoluta entre como a interface é renderizada e como as IAs interagem. Para evitar alucinações matemáticas e preservar o "flair" do Kindroid, adota-se a seguinte regra:
+
+1. **Back-end (Comunicação AI-to-AI):** O Kindroid e o Gemini operam estritamente usando **Variáveis Qualitativas**.
+   * **Nunca** forneça dados como `hunger: 45%` ao LLM.
+   * Use os 5 limiares definidos: `STUFFED`, `SATIATED`, `PECULIAR`, `HANGRY`, `STARVING`.
+2. **Front-end (Apresentação ao Jogador):** O cálculo numérico existe, mas está isolado no Tampermonkey. O jogador visualiza o status no clássico sistema de **10 Blocos (Pips/Quadrados)**, lembrando RPGs tradicionais.
+   * 10 Blocos = `STUFFED`
+   * 8 Blocos = `SATIATED`
+   * 6 Blocos = `PECULIAR`
+   * 4 Blocos = `HANGRY`
+   * 2 Blocos = `STARVING`
+   * Marcadores narrativos (como exercício) tiram blocos momentaneamente para feedback visual imediato antes da próxima rolagem do Gemini.
+
+---
+
+## 5. Próximos Passos Gerais
+
+A refatoração inicial do `hunger_module.js` foi concluída com sucesso, implementando os eventos e o manifesto qualitativo. O próximo grande passo para a engine é expandir a mesma mentalidade de Micro-Inferência assíncrona para as barras de `Mood` e `Energy`.

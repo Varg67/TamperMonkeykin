@@ -26,35 +26,38 @@
 
 /**
  * Thresholds qualitativos — a linguagem oficial entre sistemas.
- * Nenhum LLM jamais vê um número. Só estes quatro estados.
+ * Nenhum LLM jamais vê um número. Só estes 5 estados baseados nos blocos da UI.
  */
 const HungerThreshold = Object.freeze({
+  STUFFED:  "STUFFED",
   SATIATED: "SATIATED",
-  INTEREST: "INTEREST",
+  PECULIAR: "PECULIAR",
   HANGRY:   "HANGRY",
-  CRITICAL: "CRITICAL",
+  STARVING: "STARVING",
 });
 
 /**
- * Faixas numéricas correspondentes a cada threshold.
- * Usadas SOMENTE pelo converter para gerar o valor da barra UI.
- * [min, max] — inclusivos.
+ * Quantidade de blocos associados a cada estado.
+ * A barra visual tem 10 blocos no total.
+ * O índice é a quantidade de blocos preenchidos (10 = totalmente cheio/empanturrado).
  */
-const THRESHOLD_RANGES = Object.freeze({
-  [HungerThreshold.SATIATED]: { min: 0,  max: 20  },
-  [HungerThreshold.INTEREST]: { min: 21, max: 45  },
-  [HungerThreshold.HANGRY]:   { min: 46, max: 75  },
-  [HungerThreshold.CRITICAL]: { min: 76, max: 100 },
+const THRESHOLD_BLOCKS = Object.freeze({
+  [HungerThreshold.STUFFED]:  { blocks: 10 },
+  [HungerThreshold.SATIATED]: { blocks: 8  },
+  [HungerThreshold.PECULIAR]: { blocks: 6  },
+  [HungerThreshold.HANGRY]:   { blocks: 4  },
+  [HungerThreshold.STARVING]: { blocks: 2  },
 });
 
 /**
- * Cores da barra por threshold — consumidas pela UI.
+ * Cores dos blocos por threshold — consumidas pela UI do Tampermonkey.
  */
 const THRESHOLD_COLORS = Object.freeze({
-  [HungerThreshold.SATIATED]: { bar: "#4ade80", bg: "#14532d" }, // verde
-  [HungerThreshold.INTEREST]: { bar: "#facc15", bg: "#713f12" }, // amarelo
-  [HungerThreshold.HANGRY]:   { bar: "#fb923c", bg: "#7c2d12" }, // laranja
-  [HungerThreshold.CRITICAL]: { bar: "#ef4444", bg: "#7f1d1d" }, // vermelho
+  [HungerThreshold.STUFFED]:  { fill: "#3b82f6", bg: "#1e3a8a" }, // azul
+  [HungerThreshold.SATIATED]: { fill: "#4ade80", bg: "#14532d" }, // verde
+  [HungerThreshold.PECULIAR]: { fill: "#facc15", bg: "#713f12" }, // amarelo
+  [HungerThreshold.HANGRY]:   { fill: "#fb923c", bg: "#7c2d12" }, // laranja
+  [HungerThreshold.STARVING]: { fill: "#ef4444", bg: "#7f1d1d" }, // vermelho
 });
 
 /**
@@ -155,12 +158,13 @@ function buildFlashHungerPrompt(buffer) {
     `Responda SOMENTE neste formato:`,
     `hunger: THRESHOLD | reason: explicação_curta`,
     ``,
-    `Thresholds válidos: SATIATED, INTEREST, HANGRY, CRITICAL`,
+    `Thresholds válidos: STUFFED, SATIATED, PECULIAR, HANGRY, STARVING`,
     `Regras (RPG Cinemático Baseado em Eventos):`,
     `- 'time_skip' com histórico de 'light_meal' ou 'snack' = HANGRY`,
     `- Ações de 'physical_activity' (treino, combate, fuga) exigem mais calorias, intensificam fome.`,
-    `- Ignorar múltiplos 'time_skip' sucessivos sem refeição = CRITICAL`,
-    `- Refeição completa ('FULL_MEAL', 'FEAST') restaura para SATIATED.`,
+    `- Ignorar múltiplos 'time_skip' sucessivos sem refeição = STARVING`,
+    `- Refeição completa ('FULL_MEAL') restaura para SATIATED.`,
+    `- 'FEAST' (banquete) muda estado para STUFFED.`,
   ].join("\n");
 }
 
@@ -181,7 +185,7 @@ function parseFlashResponse(flashResponse) {
 
   // Pattern: hunger: THRESHOLD | reason: texto
   const match = cleaned.match(
-    /hunger:\s*(SATIATED|INTEREST|HANGRY|CRITICAL)\s*\|\s*reason:\s*(.+)/i
+    /hunger:\s*(STUFFED|SATIATED|PECULIAR|HANGRY|STARVING)\s*\|\s*reason:\s*(.+)/i
   );
 
   if (!match) return null;
@@ -202,39 +206,31 @@ function parseFlashResponse(flashResponse) {
 // ─────────────────────────────────────────────
 
 /**
- * Calcula a posição numérica DENTRO da faixa do threshold
- * usando os marcadores de eventos/ações narrativas como peso.
- *
- * Não é uma simulação de tempo, mas acúmulo de estresse de cena.
+ * Calcula a perda visual de blocos baseada em marcadores narrativos,
+ * garantindo que o `value` seja estritamente focado em blocos inteiros para o Front-End.
  *
  * @param {string} threshold — HungerThreshold válido
  * @param {string[]} markers — marcadores narrativos ativos
- * @returns {{ value: number, threshold: string, color: { bar: string, bg: string } }}
+ * @returns {{ blocks: number, threshold: string, color: { fill: string, bg: string } }}
  */
-function convertToNumeric(threshold, markers = []) {
-  const range = THRESHOLD_RANGES[threshold];
-  if (!range) {
+function convertToBlocks(threshold, markers = []) {
+  const baseData = THRESHOLD_BLOCKS[threshold];
+  if (!baseData) {
     throw new Error(`Threshold inválido: ${threshold}`);
   }
 
-  // Soma dos pesos dos marcadores ativos gerados por eventos
-  let gravityScore = 0;
+  let totalBlocks = baseData.blocks;
 
-  for (const marker of markers) {
-    const weight = NARRATIVE_MARKER_WEIGHTS[marker];
-    if (weight !== undefined) {
-      gravityScore += weight;
-    }
+  // Modificadores menores de cena reduzem temporariamente a exibição em 1 bloco
+  // para dar feedback visual antes da mudança real qualitativa do Gemini.
+  let hasStress = markers.some(m => NARRATIVE_MARKER_WEIGHTS[m] >= 0.15);
+
+  if (hasStress) {
+      totalBlocks = Math.max(0, totalBlocks - 1);
   }
 
-  // Clamp entre 0.0 e 1.0
-  const position = Math.max(0, Math.min(1, gravityScore));
-
-  // Interpola dentro da faixa
-  const value = Math.round(range.min + position * (range.max - range.min));
-
   return {
-    value,
+    blocks: totalBlocks,
     threshold,
     color: THRESHOLD_COLORS[threshold],
   };
@@ -251,20 +247,24 @@ function convertToNumeric(threshold, markers = []) {
  * Escrito em português — língua de trabalho do projeto.
  */
 const NARRATIVE_DIRECTIVES = Object.freeze({
+  [HungerThreshold.STUFFED]: {
+    directive: "Empanturrado. O personagem acabou de comer além da conta. Recusa qualquer comida adicional. Pode estar levemente letárgico.",
+    behavior_modifiers: ["recusa_comida", "letargia_leve"],
+  },
   [HungerThreshold.SATIATED]: {
-    directive: "Personagem saciado. Foque na trama. Sem menções a comida salvo se contextualmente relevante.",
+    directive: "Personagem saciado e satisfeito. Foque 100% na trama. Sem menções a comida.",
     behavior_modifiers: [],
   },
-  [HungerThreshold.INTEREST]: {
-    directive: "Apetite desperto. Mencione cheiros de comida, vitrines de restaurante, ou desejo por pratos específicos de forma natural.",
-    behavior_modifiers: ["curiosidade_gastronômica", "distração_leve"],
+  [HungerThreshold.PECULIAR]: {
+    directive: "Apetite levemente desperto. O personagem comenta sobre comida ou olha para pratos com curiosidade se passar perto de um, mas não altera os planos por isso.",
+    behavior_modifiers: ["curiosidade_gastronômica"],
   },
   [HungerThreshold.HANGRY]: {
-    directive: "Hangry. O personagem está irritadiço, impaciente, perde o foco facilmente. Estômago ronca em momentos inoportunos. Sarcasmo aumenta.",
-    behavior_modifiers: ["irritabilidade", "impaciência", "sarcasmo", "foco_reduzido"],
+    directive: "Hangry. O personagem está faminto e irritadiço. Estômago ronca. Impaciência. Ele quer parar as atividades e buscar comida.",
+    behavior_modifiers: ["irritabilidade", "impaciência", "sarcasmo"],
   },
-  [HungerThreshold.CRITICAL]: {
-    directive: "FOME CRÍTICA. A fome é prioridade absoluta. O personagem recusa atividades complexas, está fraco, não consegue pensar direito. Qualquer menção a comida domina sua atenção completamente.",
+  [HungerThreshold.STARVING]: {
+    directive: "FOME CRÍTICA. A fome é prioridade absoluta. Personagem se recusa a fazer atividades pesadas. Tontura leve. O foco inteiro é comer.",
     behavior_modifiers: ["recusa_atividades", "fraqueza", "obsessão_comida", "cognição_reduzida"],
   },
 });
@@ -295,24 +295,26 @@ function getNarrativePayload(threshold) {
 // ─────────────────────────────────────────────
 
 /**
- * Gera o payload completo para renderização da barra de fome na UI.
+ * Gera o payload completo para renderização visual dos blocos na UI do Tampermonkey.
+ * Os dados aqui (como os blocos) NUNCA devem ser vazados em texto para o Kindroid.
  *
  * @param {string} threshold
  * @param {string[]} markers
- * @returns {Readonly<{ value: number, threshold: string, color: { bar: string, bg: string }, label: string }>}
+ * @returns {Readonly<{ blocks: number, threshold: string, color: { fill: string, bg: string }, label: string }>}
  */
 function getUIPayload(threshold, markers = []) {
-  const numeric = convertToNumeric(threshold, markers);
+  const blocksData = convertToBlocks(threshold, markers);
 
   const labels = {
+    [HungerThreshold.STUFFED]:  "Empanturrado",
     [HungerThreshold.SATIATED]: "Satisfeito",
-    [HungerThreshold.INTEREST]: "Com apetite",
+    [HungerThreshold.PECULIAR]: "Apetite",
     [HungerThreshold.HANGRY]:   "Faminto",
-    [HungerThreshold.CRITICAL]: "Passando mal",
+    [HungerThreshold.STARVING]: "Passando mal",
   };
 
   return Object.freeze({
-    ...numeric,
+    ...blocksData,
     label: labels[threshold] || "Desconhecido",
   });
 }
@@ -400,12 +402,12 @@ function addEventMarker(currentBuffer, marker) {
  */
 function inferPostMealThreshold(mealType, currentThreshold) {
   const recovery = {
-    [MealType.FEAST]:      HungerThreshold.SATIATED,
+    [MealType.FEAST]:      HungerThreshold.STUFFED,
     [MealType.FULL_MEAL]:  HungerThreshold.SATIATED,
-    [MealType.LIGHT_MEAL]: HungerThreshold.INTEREST,
-    [MealType.SNACK]:      currentThreshold === HungerThreshold.CRITICAL
+    [MealType.LIGHT_MEAL]: HungerThreshold.PECULIAR,
+    [MealType.SNACK]:      currentThreshold === HungerThreshold.STARVING
                               ? HungerThreshold.HANGRY
-                              : HungerThreshold.INTEREST,
+                              : HungerThreshold.PECULIAR,
     [MealType.DRINK_ONLY]: currentThreshold, // sem mudança
     [MealType.NONE]:       currentThreshold,
   };
@@ -432,7 +434,7 @@ module.exports = {
   parseFlashResponse,
 
   // Converter
-  convertToNumeric,
+  convertToBlocks,
 
   // Payloads
   getNarrativePayload,
@@ -444,7 +446,7 @@ module.exports = {
   addEventMarker,
 
   // Config (read-only, para debug/testes)
-  THRESHOLD_RANGES,
+  THRESHOLD_BLOCKS,
   THRESHOLD_COLORS,
   NARRATIVE_MARKER_WEIGHTS,
 };
