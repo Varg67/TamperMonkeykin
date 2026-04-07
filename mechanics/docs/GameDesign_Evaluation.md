@@ -108,6 +108,17 @@ Isto é mais evidente no módulo de **Energia (`energy_module.js`)**:
 
 ---
 
-## 8. Próximos Passos Gerais
+## 8. Aparência (Carisma e Impacto Social)
 
-A refatoração do `hunger_module.js`, a implementação do Perfil e a inclusão do `energy_module.js` estabeleceram a tríade fundacional da engine. O próximo passo lógico é codificar os sistemas de Saúde ou Humor baseados nas premissas que validamos.
+O Módulo de Aparência (`appearance_module.js`) vai além de higiene: atua como o clássico atributo "Carisma" de RPGs. Diferente de atributos físicos internos (Fome/Energia), Aparência determina a reação do mundo ao redor do personagem.
+
+* Limiares: `GLAMOROUS`, `PRESENTABLE`, `MESSY`, `DIRTY`, `DISGUSTING`.
+* As diretrizes de `GLAMOROUS` instruem o LLM a simular o **Efeito Halo**: NPCs são mais complacentes, confiantes e propensos à atração.
+* O estado `DISGUSTING` impõe um **Bloqueio Social Rigoroso**: NPCs se afastam, torcem o nariz e a chance de romance com desconhecidos é reduzida a zero.
+* **O Paradoxo do Amor:** A grande sacada da engine — Aparência alta facilita a geração de amor e paixão em estranhos. Porém, se os personagens já possuírem o atributo `Love` ativado no módulo romântico, o amor deve transcender a aparência suja (permitindo, por exemplo, que personagens abracem ou beijem um ao outro mesmo em estado `DIRTY` após uma batalha).
+
+---
+
+## 9. Próximos Passos Gerais
+
+A refatoração do `hunger_module.js`, a implementação do Perfil e a inclusão dos módulos de Energia e Aparência estabeleceram a base biológica e social da engine. O próximo passo lógico é desbravar as relações interpessoais complexas (Confiança, Amor, Humor) ou sistemas mecânicos puros como Dinheiro/Saúde.
