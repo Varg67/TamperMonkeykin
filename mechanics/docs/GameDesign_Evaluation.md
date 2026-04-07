@@ -150,6 +150,19 @@ Diferente de status biológicos (Energia, Fome, Saúde) e sociais passivos (Apar
 
 ---
 
-## 11. Próximos Passos Gerais
+## 11. A Tridimensionalidade do Amor (Filosofia Grega)
 
-A base biológica (Fome, Energia, Saúde), a base social passiva (Aparência), e a fundação direcional (Confiança) estão concluídas. O terreno está completamente asfaltado para os módulos emocionais absolutos (Mood) e os românticos restritos (Love, Pleasure, Libido).
+O Módulo de Amor (`love_module.js`) é a coroa do RPG Narrativo, substituindo as réguas genéricas (Gostar 0 a 100%) por um design **Tridimensional** que permite simulações complexas de "Slow Burn", "Amigos para Amantes", Casamentos por conveniência ou Relacionamentos Tóxicos.
+
+* **Eixo 1 (O Alvo):** Direcional, operando via `targetName` assim como a Confiança.
+* **Eixo 2 (O Sabor - Filosofia Grega):** A engine classifica o tipo de afeto sentido (AGAPE, EROS, PHILIA, LUDUS, PRAGMA, MANIA, STORGE).
+* **Eixo 3 (O Grau - Intensidade):** Avalia a força do Sabor (CONSUMING, PROFOUND, GROWING, FLEETING, FADING, EMPTY).
+* **Processamento Duplo:** O Gemini avalia simultaneamente o Eixo 2 e o Eixo 3 na mesma transição.
+* **Efeito Dominó Poderoso:** A `MANIA` exporta debuffs pesadíssimos de energia (cansaço mental) e paranoia. O `EROS` consome e ativa imediatamente os buffers passivos do módulo de *Libido*. `AGAPE` (Sacrifício incondicional) garante bônus absolutos de Confiança.
+* **Mecânica de Cores:** Cada "Sabor" possui sua cor própria na Interface do Tampermonkey (ex: Magenta para Eros, Ouro para Agape, Azul para Philia), enquanto a Intensidade preenche os 10 blocos visuais.
+
+---
+
+## 12. Próximos Passos Gerais
+
+Com as bases Biológica (Health, Energy, Hunger), Social (Appearance, Trust) e Romântica Absoluta (Love) estabelecidas, restam apenas o Humor Global (Mood) como o Agregador Passivo Final, e os status sensíveis de Ação Romântica explícita (Libido e Pleasure).
