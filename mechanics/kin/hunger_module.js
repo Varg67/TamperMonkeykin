@@ -75,16 +75,11 @@ const MealType = Object.freeze({
  * Usado pelo converter para posicionar DENTRO da faixa do threshold.
  */
 const NARRATIVE_MARKER_WEIGHTS = Object.freeze({
-  skipped_breakfast:  0.15,
-  skipped_lunch:      0.25,
-  skipped_dinner:     0.25,
-  light_breakfast:    0.10,
-  light_lunch:        0.10,
-  hours_since_meal:   0.05,  // multiplicado pelas horas
-  physical_activity:  0.15,
+  skipped_meal:       0.25,
+  light_meal:         0.10,
+  physical_activity:  0.20,  // Cansaço/exercício dispara fome (Evento Direto)
   emotional_stress:   0.10,
-  fast_metabolism:    0.10,
-  slow_metabolism:   -0.08,
+  time_skip:          0.30,  // Salto de cena longo sem refeição declarada
 });
 
 
@@ -98,27 +93,18 @@ const NARRATIVE_MARKER_WEIGHTS = Object.freeze({
  *
  * @param {Object} params
  * @param {string} params.threshold       — último threshold qualitativo conhecido
- * @param {string} params.lastMealType    — tipo da última refeição (MealType)
- * @param {string} params.lastMealTime    — hora narrativa da última refeição ("7h", "13h")
- * @param {string} params.currentTime     — hora narrativa da cena atual
- * @param {string[]} params.missedMeals   — refeições puladas desde o último checkpoint
- * @param {string[]} params.markers       — marcadores narrativos ativos
+ * @param {string} params.lastMealType    — tipo da última refeição inferida pelo Gemini (MealType)
+ * @param {string[]} params.markers       — marcadores de eventos/ações narrativas ativas
  * @returns {Readonly<Object>}
  */
 function createSceneBuffer({
   threshold    = HungerThreshold.SATIATED,
   lastMealType = MealType.NONE,
-  lastMealTime = "0h",
-  currentTime  = "0h",
-  missedMeals  = [],
   markers      = [],
 } = {}) {
   return Object.freeze({
     threshold,
     lastMealType,
-    lastMealTime,
-    currentTime,
-    missedMeals: Object.freeze([...missedMeals]),
     markers: Object.freeze([...markers]),
   });
 }
@@ -133,7 +119,7 @@ function createSceneBuffer({
  * Economia máxima de tokens. Uma linha, pipe-separated.
  *
  * Exemplo de saída:
- *   hunger: INTEREST | last_meal: snack(7h) | now: 15h | missed: lunch | markers: light_breakfast,hours_since_meal
+ *   hunger: INTEREST | last_meal: snack | markers: physical_activity,time_skip
  *
  * @param {Object} buffer — SceneBuffer
  * @returns {string}
@@ -141,13 +127,8 @@ function createSceneBuffer({
 function serializeBufferForFlash(buffer) {
   const parts = [
     `hunger: ${buffer.threshold}`,
-    `last_meal: ${buffer.lastMealType}(${buffer.lastMealTime})`,
-    `now: ${buffer.currentTime}`,
+    `last_meal: ${buffer.lastMealType}`,
   ];
-
-  if (buffer.missedMeals.length > 0) {
-    parts.push(`missed: ${buffer.missedMeals.join(",")}`);
-  }
 
   if (buffer.markers.length > 0) {
     parts.push(`markers: ${buffer.markers.join(",")}`);
@@ -175,11 +156,11 @@ function buildFlashHungerPrompt(buffer) {
     `hunger: THRESHOLD | reason: explicação_curta`,
     ``,
     `Thresholds válidos: SATIATED, INTEREST, HANGRY, CRITICAL`,
-    `Regras:`,
-    `- Café da manhã leve + almoço pulado após 6h = mínimo HANGRY`,
-    `- Refeição completa recente (< 2h) = SATIATED`,
-    `- Sem comer há 8h+ = CRITICAL`,
-    `- Estresse emocional intensifica a fome em um nível`,
+    `Regras (RPG Cinemático Baseado em Eventos):`,
+    `- 'time_skip' com histórico de 'light_meal' ou 'snack' = HANGRY`,
+    `- Ações de 'physical_activity' (treino, combate, fuga) exigem mais calorias, intensificam fome.`,
+    `- Ignorar múltiplos 'time_skip' sucessivos sem refeição = CRITICAL`,
+    `- Refeição completa ('FULL_MEAL', 'FEAST') restaura para SATIATED.`,
   ].join("\n");
 }
 
@@ -222,23 +203,21 @@ function parseFlashResponse(flashResponse) {
 
 /**
  * Calcula a posição numérica DENTRO da faixa do threshold
- * usando os marcadores narrativos como peso.
+ * usando os marcadores de eventos/ações narrativas como peso.
  *
- * Não é uma simulação — é uma tradução visual.
- * O threshold já é a verdade. O número é só cosmético.
+ * Não é uma simulação de tempo, mas acúmulo de estresse de cena.
  *
  * @param {string} threshold — HungerThreshold válido
  * @param {string[]} markers — marcadores narrativos ativos
- * @param {number} hoursSinceMeal — horas narrativas desde última refeição
  * @returns {{ value: number, threshold: string, color: { bar: string, bg: string } }}
  */
-function convertToNumeric(threshold, markers = [], hoursSinceMeal = 0) {
+function convertToNumeric(threshold, markers = []) {
   const range = THRESHOLD_RANGES[threshold];
   if (!range) {
     throw new Error(`Threshold inválido: ${threshold}`);
   }
 
-  // Soma dos pesos dos marcadores ativos
+  // Soma dos pesos dos marcadores ativos gerados por eventos
   let gravityScore = 0;
 
   for (const marker of markers) {
@@ -247,9 +226,6 @@ function convertToNumeric(threshold, markers = [], hoursSinceMeal = 0) {
       gravityScore += weight;
     }
   }
-
-  // Peso temporal: horas * peso por hora
-  gravityScore += hoursSinceMeal * (NARRATIVE_MARKER_WEIGHTS.hours_since_meal || 0);
 
   // Clamp entre 0.0 e 1.0
   const position = Math.max(0, Math.min(1, gravityScore));
@@ -323,11 +299,10 @@ function getNarrativePayload(threshold) {
  *
  * @param {string} threshold
  * @param {string[]} markers
- * @param {number} hoursSinceMeal
  * @returns {Readonly<{ value: number, threshold: string, color: { bar: string, bg: string }, label: string }>}
  */
-function getUIPayload(threshold, markers = [], hoursSinceMeal = 0) {
-  const numeric = convertToNumeric(threshold, markers, hoursSinceMeal);
+function getUIPayload(threshold, markers = []) {
+  const numeric = convertToNumeric(threshold, markers);
 
   const labels = {
     [HungerThreshold.SATIATED]: "Satisfeito",
@@ -348,21 +323,17 @@ function getUIPayload(threshold, markers = [], hoursSinceMeal = 0) {
 // ─────────────────────────────────────────────
 
 /**
- * Processa um checkpoint de cena completo.
+ * Processa um checkpoint de cena completo (Micro-Inferência do Gemini Flash).
  *
- * Recebe o buffer da cena anterior + a resposta do Flash,
- * e retorna tudo que cada sistema precisa:
- *   - payload para o Kindroid (diretriz narrativa)
- *   - payload para a UI (barra numérica + cor)
- *   - novo buffer para a próxima cena
+ * Recebe o buffer anterior + a resposta qualitativa do Flash,
+ * e retorna os novos estados para UI (Front-end) e Kindroid (Suggestion Injection).
  *
  * @param {Object} params
  * @param {Object} params.previousBuffer — buffer da cena anterior
- * @param {string} params.flashResponse  — resposta crua do Flash
- * @param {string} params.newTime        — hora narrativa da nova cena
+ * @param {string} params.flashResponse  — resposta crua do Flash (ex: "hunger: HANGRY | reason: ...")
  * @returns {{ kindroid: Object, ui: Object, nextBuffer: Object } | { error: string }}
  */
-function processSceneCheckpoint({ previousBuffer, flashResponse, newTime }) {
+function processSceneCheckpoint({ previousBuffer, flashResponse }) {
   // 1. Parseia a resposta do Flash
   const parsed = parseFlashResponse(flashResponse);
   if (!parsed) {
@@ -374,20 +345,14 @@ function processSceneCheckpoint({ previousBuffer, flashResponse, newTime }) {
     };
   }
 
-  // 2. Calcula horas narrativas desde última refeição
-  const hoursSinceMeal = parseNarrativeHours(previousBuffer.lastMealTime, newTime);
-
-  // 3. Gera payloads
+  // 2. Gera payloads atualizados
   const kindroid = getNarrativePayload(parsed.threshold);
-  const ui = getUIPayload(parsed.threshold, previousBuffer.markers, hoursSinceMeal);
+  const ui = getUIPayload(parsed.threshold, previousBuffer.markers);
 
-  // 4. Monta novo buffer para a próxima cena
+  // 3. Monta novo buffer mantendo o contexto mas assumindo o novo Threshold
   const nextBuffer = createSceneBuffer({
     threshold:    parsed.threshold,
     lastMealType: previousBuffer.lastMealType,
-    lastMealTime: previousBuffer.lastMealTime,
-    currentTime:  newTime,
-    missedMeals:  previousBuffer.missedMeals,
     markers:      previousBuffer.markers,
   });
 
@@ -395,24 +360,32 @@ function processSceneCheckpoint({ previousBuffer, flashResponse, newTime }) {
 }
 
 /**
- * Atualiza o buffer quando o personagem come.
- * Chamado DENTRO de uma cena, não entre cenas.
+ * Atualiza o buffer baseado num Evento (Ação de comer, dormir, exercício etc).
+ * Quando acionado por comer, o Tampermonkey injeta o `mealType` pré-inferido pelo Gemini.
  *
  * @param {Object} currentBuffer — buffer atual
- * @param {string} mealType      — MealType consumido
- * @param {string} mealTime      — hora narrativa da refeição
- * @returns {Object} — novo buffer atualizado
+ * @param {string} mealType      — MealType inferido do evento consumido
+ * @returns {Object} — novo buffer atualizado com feedback visual imediato
  */
-function registerMeal(currentBuffer, mealType, mealTime) {
+function registerMealEvent(currentBuffer, mealType) {
   return createSceneBuffer({
     threshold:    inferPostMealThreshold(mealType, currentBuffer.threshold),
     lastMealType: mealType,
-    lastMealTime: mealTime,
-    currentTime:  currentBuffer.currentTime,
-    missedMeals:  [], // refeição reseta missed meals
     markers:      currentBuffer.markers.filter(
-      (m) => !m.startsWith("skipped_") && !m.startsWith("light_")
+      (m) => m !== "skipped_meal" && m !== "light_meal"
     ),
+  });
+}
+
+/**
+ * Registra marcadores de evento passivos (como `time_skip` ou `physical_activity`)
+ * para impactar na gravidade da barra UI.
+ */
+function addEventMarker(currentBuffer, marker) {
+  return createSceneBuffer({
+    threshold: currentBuffer.threshold,
+    lastMealType: currentBuffer.lastMealType,
+    markers: [...currentBuffer.markers, marker],
   });
 }
 
@@ -420,27 +393,6 @@ function registerMeal(currentBuffer, mealType, mealTime) {
 // ─────────────────────────────────────────────
 //  HELPERS INTERNOS
 // ─────────────────────────────────────────────
-
-/**
- * Extrai horas narrativas de strings como "7h", "15h", "23h30".
- * Retorna a diferença em horas (float).
- */
-function parseNarrativeHours(fromTime, toTime) {
-  const parse = (t) => {
-    const match = t.match(/(\d+)h?(\d*)/);
-    if (!match) return 0;
-    const hours = parseInt(match[1], 10);
-    const minutes = match[2] ? parseInt(match[2], 10) : 0;
-    return hours + minutes / 60;
-  };
-
-  let diff = parse(toTime) - parse(fromTime);
-
-  // Se negativo, cruzou meia-noite
-  if (diff < 0) diff += 24;
-
-  return diff;
-}
 
 /**
  * Inferência local de threshold pós-refeição.
@@ -488,7 +440,8 @@ module.exports = {
 
   // Pipeline
   processSceneCheckpoint,
-  registerMeal,
+  registerMealEvent,
+  addEventMarker,
 
   // Config (read-only, para debug/testes)
   THRESHOLD_RANGES,
