@@ -125,6 +125,20 @@ A Aparência reage a uma gama muito mais ampla de nuances além de "banho" ou "l
 
 ---
 
-## 9. Próximos Passos Gerais
+## 9. Saúde (O Mestre do Efeito Dominó)
 
-A refatoração do `hunger_module.js`, a implementação do Perfil e a inclusão dos módulos de Energia e Aparência estabeleceram a base biológica e social da engine. O próximo passo lógico é desbravar as relações interpessoais complexas (Confiança, Amor, Humor) ou sistemas mecânicos puros como Dinheiro/Saúde.
+A Saúde (`health_module.js`) é projetada para ser o status mais punitivo da Engine. Se os ferimentos forem severos, instintos de sobrevivência se sobrepõem a qualquer outro aspecto do roleplay.
+
+* Limiares: `HEALTHY`, `BRUISED`, `WOUNDED`, `CRITICAL`, `DYING`.
+* Diferente da Energia e Fome, que oscilam rapidamente ao longo de um dia, a Saúde muda por **Picos Agudos de Trauma** (combate, envenenamento, dano por *starvation* prolongada).
+* **O Mestre do Dominó:** A função `getGlobalModifiers` da Saúde é implacável. Se um personagem atingir o estado `WOUNDED` (Ferido severamente) ou menor:
+  * A **Energia** sofre dreno pesado (`exhausted`), impedindo esforço contínuo.
+  * O **Humor** é esmagado sob Agonia ou Dor (`agony`), silenciando traços de personalidade alegres.
+  * A **Aparência** é esteticamente manchada pelo `blood_gore`.
+  * **Hard-Block:** Qualquer aumento na barra de *Libido* ou atração física passiva é matematicamente bloqueado, respeitando a biologia básica do instinto de sobrevivência do personagem.
+
+---
+
+## 10. Próximos Passos Gerais
+
+A base biológica e de auto-preservação (Fome, Energia, Aparência, Saúde e Gatekeeper) está concluída. A engine agora está robusta o suficiente para receber os módulos de Relacionamento Emocional (*Mood*, *Trust*, *Love*) e Impulsos Românticos (*Libido*, *Pleasure*).
