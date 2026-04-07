@@ -41,15 +41,36 @@ const THRESHOLD_COLORS = Object.freeze({
 });
 
 /**
- * Modificadores de Cena / Cortes Cinemáticos.
- * Pesos temporários que sujam ou limpam o personagem na UI antes do LLM julgar.
+ * Modificadores de Cena / Cortes Cinemáticos (Buffs e Debuffs de Carisma Visual).
+ * Pesos temporários que ajustam os blocos da UI para feedback imediato antes da inferência da API.
+ * Valores Negativos: Limpam/Embelezam (Aumentam os blocos).
+ * Valores Positivos: Sujam/Degradam (Reduzem os blocos).
  */
 const SCENE_MARKERS = Object.freeze({
-  grooming_scene:   -0.50, // Banho, cabeleireiro, troca de roupa chique
-  light_weather:     0.10, // Vento, chuva fina (Messy)
-  combat_scene:      0.25, // Suor e poeira
-  mud_blood_gore:    0.40, // Dano pesado à aparência (Sujo)
-  time_skip_long:    0.15, // Acumulo de falta de higiene
+  // --- Buffs de Estética e Vestuário ---
+  deep_cleaning:         -0.60, // Banho demorado, spa, limpeza mágica pesada
+  makeup_and_grooming:   -0.30, // Retocar maquiagem, fazer a barba, pentear o cabelo, perfume
+  elegant_outfit:        -0.40, // Terno, vestido de gala, armadura polida cerimonial
+  clean_casual_clothes:  -0.20, // Trocar para roupas limpas do dia a dia
+
+  // --- Buffs de Postura e Atmosfera ---
+  flattering_lighting:   -0.15, // Luz de velas, golden hour, neon suave (Buff visual temporário)
+  confident_posture:     -0.10, // Sorriso aberto, pose de poder, caminhar elegante
+
+  // --- Debuffs Ambientais e de Combate ---
+  light_weather:          0.10, // Vento forte (cabelo bagunçado), garoa leve, poeira de rua
+  harsh_weather:          0.25, // Chuva torrencial (roupa encharcada), tempestade de areia
+  combat_sweat:           0.20, // Suor de treino, escoriações leves de combate
+  mud_blood_gore:         0.45, // Lama espessa, manchas de sangue (próprio ou inimigo), esgoto
+
+  // --- Debuffs Sociais, Vestuário e Fisiológicos ---
+  wardrobe_malfunction:   0.20, // Roupa rasgada, salto quebrado, mancha de vinho derramado
+  inappropriate_attire:   0.30, // Vestido de gala no esgoto ou farrapos em um baile real (Quebra de Contexto)
+  crying_distress:        0.15, // Choro (olhos inchados/vermelhos), maquiagem borrada
+  poor_posture:           0.10, // Encurvado, mancando de dor, tremores (perda de pose/carisma)
+
+  // --- Debuff Passivo (Tempo) ---
+  time_skip_long:         0.15, // Viagem de dias, acúmulo de sujeira natural sem higiene declarada
 });
 
 // ─────────────────────────────────────────────
@@ -91,12 +112,13 @@ function buildFlashAppearancePrompt(buffer) {
     `appearance: THRESHOLD | reason: explicação_curta`,
     ``,
     `Thresholds válidos: GLAMOROUS, PRESENTABLE, MESSY, DIRTY, DISGUSTING`,
-    `Regras de Roteiro Cinemático:`,
-    `- 'grooming_scene' (Banho, colocar roupas de gala) restaura no mínimo para 'PRESENTABLE' e possivelmente para 'GLAMOROUS'.`,
-    `- 'combat_scene' ou esforço pesado degrada instantaneamente para 'MESSY' ou 'DIRTY' devido a suor e sujeira.`,
-    `- 'mud_blood_gore' ou exposição a esgotos/lixo força o estado 'DISGUSTING'.`,
-    `- Vários dias sem declaração de banho degradam a aparência naturalmente.`,
-    `- NOTA: Ferimentos (Health) não mudam isso sozinhos, mas o sangue seco sim.`
+    `Regras de Roteiro Cinemático (Aparência, Moda e Postura):`,
+    `- Banho, grooming ('makeup_and_grooming') e roupas elegantes ('elegant_outfit') restauram ou elevam o status para 'PRESENTABLE' ou 'GLAMOROUS'.`,
+    `- Avalie o CONTEXTO: Roupas rasgadas, inadequadas para a ocasião social ('inappropriate_attire') ou maquiagem borrada por choro forçam uma degradação social (mínimo 'MESSY').`,
+    `- Esforço pesado, suor de combate ('combat_sweat') ou clima adverso degradam para 'MESSY' ou 'DIRTY'.`,
+    `- Exposição a esgoto, lixo ou sangue excessivo ('mud_blood_gore') força o estado 'DISGUSTING'.`,
+    `- Postura confiante ou iluminação cinematográfica ('flattering_lighting') podem mascarar sujeiras leves, mas não ocultam sujeira pesada.`,
+    `- Sem declaração de banho em saltos longos de tempo ('time_skip_long'), a aparência degrada naturalmente.`
   ].join("\n");
 }
 
@@ -123,15 +145,21 @@ function convertToBlocks(threshold, markers = []) {
 
   let totalBlocks = baseData.blocks;
 
-  // Impacto visual imediato no Front-End antes da API
-  let hasDirt = markers.some(m => SCENE_MARKERS[m] >= 0.25);
-  let isClean = markers.includes("grooming_scene");
-
-  if (hasDirt) {
-    totalBlocks = Math.max(0, totalBlocks - 2); // Combate suja 2 blocos visuais logo de cara
-  } else if (isClean) {
-    totalBlocks = Math.min(10, totalBlocks + 4); // Banho enche 4 blocos visuais
+  // Calcula a soma algébrica dos marcadores para dar o feedback dramático instantâneo
+  let visualShift = 0;
+  for (const marker of markers) {
+    const weight = SCENE_MARKERS[marker];
+    if (weight !== undefined) {
+      visualShift += weight;
+    }
   }
+
+  // Translada o "peso visual" em variação de blocos (Aproximação: cada 0.10 vale ~1 bloco visual)
+  const blockModifier = Math.round(visualShift * 10);
+
+  // Como os Buffs têm peso negativo (reduzem a "sujeira"), subtrair o visualShift soma blocos
+  // Como os Debuffs têm peso positivo, eles removem blocos.
+  totalBlocks = Math.max(0, Math.min(10, totalBlocks - blockModifier));
 
   return {
     blocks: totalBlocks,

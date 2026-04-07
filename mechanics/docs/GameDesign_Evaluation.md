@@ -117,6 +117,12 @@ O Módulo de Aparência (`appearance_module.js`) vai além de higiene: atua como
 * O estado `DISGUSTING` impõe um **Bloqueio Social Rigoroso**: NPCs se afastam, torcem o nariz e a chance de romance com desconhecidos é reduzida a zero.
 * **O Paradoxo do Amor:** A grande sacada da engine — Aparência alta facilita a geração de amor e paixão em estranhos. Porém, se os personagens já possuírem o atributo `Love` ativado no módulo romântico, o amor deve transcender a aparência suja (permitindo, por exemplo, que personagens abracem ou beijem um ao outro mesmo em estado `DIRTY` após uma batalha).
 
+### Marcadores de Cena Expandidos (Buffs/Debuffs)
+A Aparência reage a uma gama muito mais ampla de nuances além de "banho" ou "luta".
+* **Atmosfera/Iluminação:** `flattering_lighting` (luz de velas, neon suave) aumenta o apelo visual cinemático.
+* **Moda/Contexto:** `inappropriate_attire` pune o personagem por quebra de etiqueta social (ex: usar roupa de praia em um funeral), provando que Carisma engloba adequação.
+* **Fisiologia/Postura:** `poor_posture` (encurvado, mancando) e `crying_distress` (rosto inchado, maquiagem borrada) reduzem o status da "glamour".
+
 ---
 
 ## 9. Próximos Passos Gerais
