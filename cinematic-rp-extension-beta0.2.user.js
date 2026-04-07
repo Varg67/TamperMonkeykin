@@ -382,7 +382,9 @@
                 if(mutation.addedNodes.length > 0) {
                     mutation.addedNodes.forEach(node => {
                         if (node.nodeType === 1 || node.nodeType === 3) {
-                            const text = node.textContent || node.innerText || "";
+                            const text = node.textContent || "";
+                            if (!text.includes('"loc"')) return;
+
                             const regex = /\{[\s\S]*"loc"[\s\S]*\}/g;
                             const matches = text.match(regex);
                             if (matches && matches.length > 0) {
