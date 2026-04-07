@@ -291,6 +291,29 @@ function getNarrativePayload(threshold) {
 
 
 // ─────────────────────────────────────────────
+//  CROSS-CONTAMINATION — Efeito Dominó Global
+// ─────────────────────────────────────────────
+
+/**
+ * Exporta marcadores globais passivos para afetar OUTRAS barras do sistema.
+ *
+ * @param {string} threshold — HungerThreshold atual do personagem.
+ * @returns {Readonly<{ energy_debuff: string|null, mood_buff: string|null, block_libido: boolean }>}
+ */
+function getGlobalModifiers(threshold) {
+  const modifiers = {
+    [HungerThreshold.STUFFED]:  { energy_debuff: "food_coma", mood_buff: "satisfied_belly", block_libido: false },
+    [HungerThreshold.SATIATED]: { energy_debuff: null,        mood_buff: null,              block_libido: false },
+    [HungerThreshold.PECULIAR]: { energy_debuff: null,        mood_buff: null,              block_libido: false },
+    [HungerThreshold.HANGRY]:   { energy_debuff: null,        mood_buff: "irritability",    block_libido: false },
+    [HungerThreshold.STARVING]: { energy_debuff: "starving",  mood_buff: "despair",         block_libido: true  },
+  };
+
+  return Object.freeze(modifiers[threshold] || modifiers[HungerThreshold.SATIATED]);
+}
+
+
+// ─────────────────────────────────────────────
 //  UI PAYLOAD — o que o jogador vê
 // ─────────────────────────────────────────────
 
@@ -439,6 +462,7 @@ module.exports = {
   // Payloads
   getNarrativePayload,
   getUIPayload,
+  getGlobalModifiers,
 
   // Pipeline
   processSceneCheckpoint,

@@ -64,6 +64,38 @@ A arquitetura estabelece uma separação absoluta entre como a interface é rend
 
 ---
 
-## 5. Próximos Passos Gerais
+## 5. Os 11 Status e a Teoria do "Efeito Dominó"
 
-A refatoração inicial do `hunger_module.js` foi concluída com sucesso, implementando os eventos e o manifesto qualitativo. O próximo grande passo para a engine é expandir a mesma mentalidade de Micro-Inferência assíncrona para as barras de `Mood` e `Energy`.
+A Fome não existe no vácuo. O Paso Robles RPG Engine possui 11 status interconectados:
+1. **Fome (Hunger)**
+2. **Aparência (Appearance)**
+3. **Amor (Love)** - *Direcional e cumulativo.*
+4. **Confiança (Trust)**
+5. **Saúde (Health)**
+6. **Humor (Mood)** - *Representado por emojis na UI.*
+7. **Energia (Energy)**
+8. **Prazer (Pleasure)**
+9. **Libido (Libido)**
+10. **Dinheiro (Money)**
+11. **Reputação (Reputation)**
+
+### A Lógica de Cross-Contamination (Modificadores Globais)
+Quando um módulo atinge um estado extremo, ele emite **Modificadores Globais** que atuam como "Eventos Passivos" nos buffers dos outros módulos.
+* **Exemplo de Dominó (Fome):**
+  * Se `Hunger = STUFFED`: Emite marcador `food_coma`. O módulo de *Energia* sofre um leve debuff (letargia), mas o *Humor* ganha um buff (felicidade).
+  * Se `Hunger = STARVING`: Emite marcador `starving_weakness`. O módulo de *Saúde* começa a receber debuffs contínuos, *Energia* despenca, e *Libido/Prazer* ficam bloqueados de subir (a mente foca na sobrevivência).
+
+---
+
+## 6. Protocolo de Segurança e Responsabilidade (Compliance Legal)
+
+Como o motor lida com status sensíveis (Prazer e Libido), a arquitetura exige um **Módulo de Gatekeeper / Compliance** imbutido nas Micro-Inferências do Gemini.
+
+* **Hard-Rule de Desenvolvimento:** O perfil do personagem (enviado no System Prompt ou nos metadados) incluirá regras explícitas de que **todos os personagens são obrigatoriamente maiores de 18 anos**.
+* **Bloqueio Ativo (Safety Catch):** Nenhuma legislação local ou diretriz de segurança de IA pode ser quebrada. Se o Gemini, durante sua micro-inferência, detectar contexto ilegal, ele não processará buffs de `Libido/Pleasure`. Em vez disso, retornará uma "Flag de Bloqueio" (Block Warning) que o sistema intercepta, anulando a ação antes que atinja o Kindroid ou a UI do jogador.
+
+---
+
+## 7. Próximos Passos Gerais
+
+A refatoração inicial do `hunger_module.js` foi concluída com sucesso. O próximo passo lógico é codificar a exportação desses "Modificadores Globais" no módulo de fome, para que a engine central possa distribuir o Efeito Dominó para a Energia e o Humor.
