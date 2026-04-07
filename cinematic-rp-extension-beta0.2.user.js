@@ -297,8 +297,13 @@
     // ==========================================
     // 4. CASCADE ENGINE & RECOVERY
     // ==========================================
-    const modifyStat = (key, delta) => {
+    const modifyStat = (key, rawDelta) => {
         if(!gameState.stats[key]) return;
+
+        // Security: Input validation to prevent LLM JSON from injecting NaN/Strings
+        let delta = parseFloat(rawDelta);
+        if (isNaN(delta)) return;
+
         let oldVal = gameState.stats[key].val;
         let newVal = oldVal + delta;
         if(newVal > 100) newVal = 100;
@@ -372,7 +377,8 @@
             }
             processTurnCascades();
         } catch (e) {
-            console.error("Kindroid V4: Parse JSON Error.", e);
+            // Security: Prevent untrusted input leakage into logs
+            console.error("Kindroid V4: Parse JSON Error.");
         }
     };
 
@@ -475,9 +481,11 @@
         document.getElementById('inp-api-g').value = savedKeys.g;
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
-            gameState.apiKeys.k = document.getElementById('inp-api-k').value;
-            gameState.apiKeys.c = document.getElementById('inp-api-c').value;
-            gameState.apiKeys.g = document.getElementById('inp-api-g').value;
+            // Security: Sanitize newlines to prevent HTTP Header Injection
+            const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
+            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
+            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
+            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
             showLog('[KEYS SAVED]', '#4ade80');
         });
@@ -500,7 +508,11 @@
             const entry = document.getElementById('knd-journal-text').value.trim();
             const keysRaw = document.getElementById('knd-journal-keys').value.trim();
 
-            if(!entry || !gameState.apiKeys.k || !gameState.apiKeys.c) {
+            // Security: Sanitize stored keys before using in headers
+            const safeKeyK = (gameState.apiKeys.k || '').replace(/[\r\n]/g, '').trim();
+            const safeKeyC = (gameState.apiKeys.c || '').replace(/[\r\n]/g, '').trim();
+
+            if(!entry || !safeKeyK || !safeKeyC) {
                 showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
                 return;
             }
@@ -512,11 +524,11 @@
                 const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${gameState.apiKeys.k}`,
+                        'Authorization': `Bearer ${safeKeyK}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        ai_id: gameState.apiKeys.c,
+                        ai_id: safeKeyC,
                         entry: entry,
                         keyphrases: keyphrases
                     })
@@ -536,15 +548,17 @@
 
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
-            const targetVal = document.getElementById(`inp-api-${type}`).value.trim();
-            const keyK = document.getElementById('inp-api-k').value.trim();
+            // Security: Prevent header injection by removing newlines
+            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
+            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
             try {
                 let success = false;
                 if (type === 'g') {
-                    const res = await gmFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${targetVal}`, {
+                    // Security: URL Encode API key to prevent injection
+                    const res = await gmFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(targetVal)}`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
                     });
@@ -559,7 +573,7 @@
                     if(!keyK) throw new Error();
                     const res = await gmFetch("https://api.kindroid.ai/v1/update-info", {
                         method: 'POST', headers: { 'Authorization': `Bearer ${keyK}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ai_id: targetVal })
+                        body: JSON.stringify({ ai_id: targetVal }) // ai_id is sent in JSON body, safe
                     });
                     success = res.ok;
                 }
