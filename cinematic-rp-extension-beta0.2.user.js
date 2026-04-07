@@ -90,8 +90,9 @@
             .knd-token-count { margin-left: 4px; color: #94a3b8; font-family: monospace; }
 
             .knd-header-controls { flex: 1; text-align: right; display: flex; justify-content: flex-end; gap: 8px; }
-            .knd-ctrl-btn { cursor: pointer; font-size: 14px; color: #94a3b8; transition: all 0.2s; padding: 0 2px; }
+            .knd-ctrl-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #94a3b8; transition: all 0.2s; padding: 0 2px; outline: none; }
             .knd-ctrl-btn:hover { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
+            .knd-ctrl-btn:focus-visible { box-shadow: 0 0 0 2px rgba(80, 255, 120, 0.5); border-radius: 4px; }
 
             #knd-hud-settings, #knd-hud-journal { display: none; padding: 15px; flex-direction: column; gap: 10px; }
             .knd-settings-row { display: flex; flex-direction: column; gap: 4px; }
@@ -157,9 +158,9 @@
         apiWrapper.appendChild(createElement('span', 'knd-tokens', 'knd-token-count', '0T'));
 
         const controls = createElement('div', null, 'knd-header-controls');
-        controls.appendChild(createElement('span', 'knd-journal-toggle', 'knd-ctrl-btn', '📝', {title: 'Journal Diary'}));
-        controls.appendChild(createElement('span', 'knd-config-toggle', 'knd-ctrl-btn', '⚙️', {title: 'Settings'}));
-        controls.appendChild(createElement('span', 'knd-min-toggle', 'knd-ctrl-btn', '—', {title: 'Minimize'}));
+        controls.appendChild(createElement('button', 'knd-journal-toggle', 'knd-ctrl-btn', '📝', {title: 'Journal Diary', 'aria-label': 'Toggle Journal'}));
+        controls.appendChild(createElement('button', 'knd-config-toggle', 'knd-ctrl-btn', '⚙️', {title: 'Settings', 'aria-label': 'Toggle Settings'}));
+        controls.appendChild(createElement('button', 'knd-min-toggle', 'knd-ctrl-btn', '—', {title: 'Minimize', 'aria-label': 'Toggle Minimize'}));
 
         header.appendChild(locText);
         header.appendChild(apiWrapper);
@@ -174,10 +175,10 @@
 
         const createSettingRow = (labelText, inputId, placeholder, btnId) => {
             const row = createElement('div', null, 'knd-settings-row');
-            row.appendChild(createElement('label', null, null, labelText));
+            row.appendChild(createElement('label', null, null, labelText, {'for': inputId}));
             const group = createElement('div', null, 'knd-input-group');
             group.appendChild(createElement('input', inputId, 'knd-input', null, {type: 'password', placeholder}));
-            group.appendChild(createElement('button', btnId, 'knd-btn-ping', 'PING'));
+            group.appendChild(createElement('button', btnId, 'knd-btn-ping', 'PING', {'aria-label': `Ping ${labelText}`}));
             row.appendChild(group);
             return row;
         };
@@ -193,12 +194,12 @@
         const journalPanel = createElement('div', 'knd-hud-journal');
 
         const jRow1 = createElement('div', null, 'knd-settings-row');
-        jRow1.appendChild(createElement('label', null, null, 'NEW JOURNAL ENTRY'));
+        jRow1.appendChild(createElement('label', null, null, 'NEW JOURNAL ENTRY', {'for': 'knd-journal-text'}));
         jRow1.appendChild(createElement('textarea', 'knd-journal-text', 'knd-input knd-textarea', null, {placeholder: 'What happened today? Describe the important event...'}));
         journalPanel.appendChild(jRow1);
 
         const jRow2 = createElement('div', null, 'knd-settings-row');
-        jRow2.appendChild(createElement('label', null, null, 'KEYPHRASES (Comma separated)'));
+        jRow2.appendChild(createElement('label', null, null, 'KEYPHRASES (Comma separated)', {'for': 'knd-journal-keys'}));
         jRow2.appendChild(createElement('input', 'knd-journal-keys', 'knd-input', null, {type: 'text', placeholder: 'ex: travel, fight, secret'}));
         journalPanel.appendChild(jRow2);
 
