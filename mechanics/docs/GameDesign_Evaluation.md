@@ -163,6 +163,17 @@ O Módulo de Amor (`love_module.js`) é a coroa do RPG Narrativo, substituindo a
 
 ---
 
-## 12. Próximos Passos Gerais
+## 12. O Módulo Híbrido de Dinheiro (Wallet vs Bank)
 
-Com as bases Biológica (Health, Energy, Hunger), Social (Appearance, Trust) e Romântica Absoluta (Love) estabelecidas, restam apenas o Humor Global (Mood) como o Agregador Passivo Final, e os status sensíveis de Ação Romântica explícita (Libido e Pleasure).
+O Dinheiro (`money_module.js`) é a única métrica **Quantitativa Pura** da engine, pois a economia exige matemática precisa. No entanto, a engine preserva o "Manifesto Qualitativo" dividindo a responsabilidade:
+
+1. **A Máquina JS (A Carteira Real):** O Tampermonkey rastreia e armazena os números float exatos divididos em dois potes: **Wallet** (dinheiro vivo no bolso) e **Bank** (economias seguras).
+2. **A Inferência (O Contador):** O prompt enviado ao Gemini instrui a IA a atuar apenas como um *extrator*. O Gemini lê a cena, infere o custo das ações narradas (ex: "Tomar uma cerveja") e decreta a operação (`SPEND | value: 15`). O JS faz a subtração matemática real do Wallet.
+3. **Injeção Qualitativa (O Status Social):** Para poupar tokens e evitar confusão matemática no Kindroid, o bot NUNCA recebe seu saldo exato (Ex: `$1,250.30`). Ele recebe o seu **Poder de Compra Qualitativo** (`BROKE`, `TIGHT`, `STABLE`, `WEALTHY`, `OPULENT`).
+4. **Cenários Dramáticos (O Assalto):** O módulo comporta dinâmicas brilhantes de cena, como a flag `ROBBERY` (Assalto), que zera instantaneamente a Carteira, mas deixa o Banco intacto. Isso gera uma sub-diretriz tática para o Kindroid: *"Você é rico, mas não tem dinheiro nos bolsos agora. Impossível pagar."*
+
+---
+
+## 13. Próximos Passos Gerais
+
+Com a fundação econômica (`Money`), biológica (`Health`, `Energy`, `Hunger`), social passiva (`Appearance`) e direcional (`Trust`, `Love`) finalizadas, o terreno está pronto para os Agregadores de Sentimento (`Mood`) e Instintos Sensíveis (`Libido`, `Pleasure`).
