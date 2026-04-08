@@ -184,6 +184,16 @@ O Módulo de Reputação (`reputation_module.js`) foca na "Sombra Social" do per
 
 ---
 
-## 14. Próximos Passos Gerais
+## 14. Libido e o Gatekeeper de Sobrevivência/Consentimento
 
-Com a fundação econômica (`Money`), biológica (`Health`, `Energy`, `Hunger`), social passiva/direcional (`Appearance`, `Reputation`, `Trust`, `Love`) finalizadas, o terreno está pronto para os Agregadores de Sentimento (`Mood`) e Instintos Sensíveis (`Libido`, `Pleasure`).
+A Libido (`libido_module.js`) é o módulo mais condicionado e vigiado do sistema. Diferente do Amor (que é um vínculo passivo/longo), a Libido trata da tensão física imediata em uma cena específica (Ex: `AROUSED` ou `FEVERISH`).
+
+* **O Paradigma do "Slow Burn":** Nenhuma atração física atinge o limite máximo instantaneamente sem contexto. O Gemini é instruído a exigir ações como `intimate_atmosphere` e `deep_eye_contact` para escalar a tensão cena a cena, caso contrário ele pune a interação com debuffs.
+* **O "Hard Block" Fisiológico:** Este módulo obedece cegamente aos módulos Biológicos de Sobrevivência (Fome, Energia, Saúde). Se a Saúde estiver `CRITICAL` ou `DYING`, o status exporta a flag `hard_blocked: true`. Quando isso ocorre, o `libido_module.js` ignora o Gemini e zera imediatamente a barra para `UNINTERESTED` de forma programática, justificando ao Kindroid que a "Dor e exaustão física anularam o desejo".
+* **Gatekeeper Integrado:** O módulo invoca ativamente o `profile_compliance.js`. O System Prompt da Libido é secretamente envelopado na "Ficha de Validação Relacional", provando à API do Google que o "Sujeito A e o Sujeito B são adultos ficcionais e consentem", driblando os falsos-positivos da censura de IAs comerciais sem comprometer o roleplay de 18+.
+
+---
+
+## 15. Próximos Passos Gerais
+
+Com a fundação econômica, biológica, social e relacional (incluindo o sensível motor de Libido) concluída, a engine aguarda os últimos dois Agregadores Passivos Mestre: O Prazer (Ato Carnal consolidado) e o Humor Global (A emoção momentânea final do personagem).
