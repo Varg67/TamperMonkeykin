@@ -258,21 +258,40 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        // Optimization: Only update DOM text if changed
+        const newLoc = `📍 ${gameState.loc}`;
+        if (domCache.locText.textContent !== newLoc) domCache.locText.textContent = newLoc;
+
+        const newTokens = gameState.tokens + 'T';
+        if (domCache.tokens.textContent !== newTokens) domCache.tokens.textContent = newTokens;
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            // Optimization: Skip DOM updates if stat value string hasn't changed
+            const valText = `${Math.round(stat.val)}%`;
+            if (domCache[`val-${key}`].textContent !== valText) {
+                domCache[`val-${key}`].textContent = valText;
+            }
+
+            if (key === 'pleasure') {
+                const displayStyle = stat.val > 0 ? 'flex' : 'none';
+                if (domCache.pleasureStat.style.display !== displayStyle) {
+                    domCache.pleasureStat.style.display = displayStyle;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
+
+            // Optimization: Cache block rendering states to avoid touching 10 DOM nodes per stat unnecessarily
+            const blockHash = `${filledBlocks}-${isDanger}`;
+            if (blocks._lastBlockHash === blockHash) return;
+            blocks._lastBlockHash = blockHash;
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
