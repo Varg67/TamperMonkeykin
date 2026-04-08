@@ -174,6 +174,16 @@ O Dinheiro (`money_module.js`) é a única métrica **Quantitativa Pura** da eng
 
 ---
 
-## 13. Próximos Passos Gerais
+## 13. Reputação (A Fofoca Mundana)
 
-Com a fundação econômica (`Money`), biológica (`Health`, `Energy`, `Hunger`), social passiva (`Appearance`) e direcional (`Trust`, `Love`) finalizadas, o terreno está pronto para os Agregadores de Sentimento (`Mood`) e Instintos Sensíveis (`Libido`, `Pleasure`).
+O Módulo de Reputação (`reputation_module.js`) foca na "Sombra Social" do personagem. Em um cenário focado em Slice of Life ou Drama Urbano, a mecânica mede a fama e o falatório da comunidade.
+
+* Limiares Mundanos: `INFLUENTIAL`, `RESPECTED`, `ANONYMOUS`, `GOSSIPED`, `OUTCAST`.
+* **Efeito Pre-Bias:** Ao contrário da *Aparência*, que afeta a atração visual imediata, a Reputação afeta o *Trust* base de estranhos. Se o personagem for um `OUTCAST` (Pária), um novo NPC entrará em cena já com a barra de Trust no nível `SUSPICIOUS` ou `PARANOID`.
+* O motor avalia apenas Atos Públicos (`caught_cheating`, `public_scene`, `heroic_charity`). Crimes cometidos "sem testemunhas" não alteram a Reputação pela lógica de Inferência, incentivando táticas furtivas ou comportamento duplo.
+
+---
+
+## 14. Próximos Passos Gerais
+
+Com a fundação econômica (`Money`), biológica (`Health`, `Energy`, `Hunger`), social passiva/direcional (`Appearance`, `Reputation`, `Trust`, `Love`) finalizadas, o terreno está pronto para os Agregadores de Sentimento (`Mood`) e Instintos Sensíveis (`Libido`, `Pleasure`).
