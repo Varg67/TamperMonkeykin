@@ -1,3 +1,7 @@
 ## 2024-04-07 - Accessible Form & Icon Buttons Update
 **Learning:** Purely visual DOM structures, such as using `span` for buttons or implicit `label` proximity without the `for` attribute, cause screen readers to ignore interactions and field descriptions. This UI component pattern required explicit element upgrades.
 **Action:** Always replace icon-only `span` controls with proper `<button>` elements including `aria-label`s, and ensure every `<label>` uses the `for` attribute bound to its associated `<input>` ID. Also ensure that custom control buttons use `:focus-visible` styles for better keyboard accessibility.
+
+## 2026-04-09 - Missing visual feedback for async network requests
+**Learning:** In Tampermonkey scripts using `GM_xmlhttpRequest` via custom wrappers like `gmFetch`, it's critical to provide explicit visual feedback and lock button states during asynchronous operations. Without this, users may click multiple times assuming the first click failed, causing duplicate API requests, race conditions, or rate limiting.
+**Action:** When implementing async actions tied to UI elements, always set the triggering element's `disabled` state to `true` and update its label/icon (e.g., to 'SENDING...' or '...') *before* initiating the request, and ensure the state is restored to its original values inside a `finally` block so the button recovers even if the request fails or throws an exception. Include CSS styles for the `:disabled` state (e.g., `opacity: 0.5`, `cursor: not-allowed`) to make the lock visually apparent.
