@@ -257,17 +257,46 @@
         });
     };
 
+    const lastRenderState = {
+        loc: null,
+        tokens: null,
+        pleasureDisplay: null,
+        stats: {}
+    };
+
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const locStr = `📍 ${gameState.loc}`;
+        if (lastRenderState.loc !== locStr) {
+            domCache.locText.textContent = locStr;
+            lastRenderState.loc = locStr;
+        }
+
+        const tokensStr = gameState.tokens + 'T';
+        if (lastRenderState.tokens !== tokensStr) {
+            domCache.tokens.textContent = tokensStr;
+            lastRenderState.tokens = tokensStr;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            if (!lastRenderState.stats[key]) lastRenderState.stats[key] = { valStr: null, blocks: [] };
+
+            const valStr = `${Math.round(stat.val)}%`;
+            if (lastRenderState.stats[key].valStr !== valStr) {
+                domCache[`val-${key}`].textContent = valStr;
+                lastRenderState.stats[key].valStr = valStr;
+            }
+
+            if (key === 'pleasure') {
+                const pleasureDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (lastRenderState.pleasureDisplay !== pleasureDisplay) {
+                    domCache.pleasureStat.style.display = pleasureDisplay;
+                    lastRenderState.pleasureDisplay = pleasureDisplay;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
@@ -276,12 +305,30 @@
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
-                block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
+                let className = 'knd-block';
+                let bgColor = '';
+                let color = '';
+
                 if (i < filledBlocks) {
-                    block.classList.add('filled');
-                    if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
-                    else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
-                    else { block.style.backgroundColor = config.color; }
+                    className += ' filled';
+                    if (key === 'pleasure' && filledBlocks >= 9) {
+                        className += ' climax';
+                    } else if (isDanger) {
+                        className += ' danger';
+                        bgColor = config.danger;
+                        color = config.danger;
+                    } else {
+                        bgColor = config.color;
+                    }
+                }
+
+                // ⚡ Bolt: Cache DOM visual state hash to prevent redundant style/class recalculations
+                const blockHash = `${className}|${bgColor}|${color}`;
+                if (lastRenderState.stats[key].blocks[i] !== blockHash) {
+                    block.className = className;
+                    block.style.backgroundColor = bgColor;
+                    block.style.color = color;
+                    lastRenderState.stats[key].blocks[i] = blockHash;
                 }
             }
         });
