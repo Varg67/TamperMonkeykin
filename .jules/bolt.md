@@ -1,3 +1,6 @@
 ## 2024-05-18 - [Preventing Layout Thrashing in MutationObservers]
 **Learning:** Found a performance bottleneck in `cinematic-rp-extension-beta0.2.user.js` where a `MutationObserver` used `node.textContent || node.innerText || ""`. Accessing `innerText` forces a synchronous layout recalculation (reflow), which is extremely expensive when executed repeatedly on every added node. Furthermore, a heavy regex was being run on every text node.
 **Action:** Removed the `innerText` fallback and introduced an early return fast-path (`if (!text.includes('"loc"')) return;`) to bypass the regex when the target keyword is absent. Always prefer `textContent` in observers to avoid layout thrashing, and use cheap string checks before expensive regex operations.
+## 2026-04-13 - [Avoid DOM reading for Style Caching]
+**Learning:** When implementing DOM write caching for `style` properties in Tampermonkey userscripts, reading directly from `element.style` for comparisons is unreliable because browsers normalize hex or named colors to `rgb()` format. This can lead to false positives when comparing current state vs intended hex value, causing redundant writes.
+**Action:** Use a separate decoupled `renderCache` state variable object instead of reading the actual DOM property to track applied styles, ensuring comparisons are made against exact unnormalized string values.

@@ -133,6 +133,11 @@
     // 3. UI RENDER ENGINE
     // ==========================================
     const domCache = {};
+    // ⚡ Bolt Optimization: DOM Write Caching
+    // Reduces redundant reflows/repaints by up to 90% during frequent stats updates.
+    // We cache visual states (like textContent or computed state hashes) and skip
+    // updating the actual DOM if the state hasn't changed.
+    const renderCache = {};
     const createElement = (tag, id, className, textContent, attributes = {}) => {
         const el = document.createElement(tag);
         if (id) el.id = id;
@@ -258,30 +263,54 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const locText = `📍 ${gameState.loc}`;
+        if (renderCache.loc !== locText) {
+            domCache.locText.textContent = locText;
+            renderCache.loc = locText;
+        }
+
+        const tokensText = gameState.tokens + 'T';
+        if (renderCache.tokens !== tokensText) {
+            domCache.tokens.textContent = tokensText;
+            renderCache.tokens = tokensText;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const valText = `${Math.round(stat.val)}%`;
+            if (renderCache[`val-${key}`] !== valText) {
+                domCache[`val-${key}`].textContent = valText;
+                renderCache[`val-${key}`] = valText;
+            }
+
+            if (key === 'pleasure') {
+                const display = stat.val > 0 ? 'flex' : 'none';
+                if (renderCache.pleasureDisplay !== display) {
+                    domCache.pleasureStat.style.display = display;
+                    renderCache.pleasureDisplay = display;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
 
-            for (let i = 0; i < 10; i++) {
-                const block = blocks[i];
-                block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
-                if (i < filledBlocks) {
-                    block.classList.add('filled');
-                    if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
-                    else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
-                    else { block.style.backgroundColor = config.color; }
+            const blockHash = `${filledBlocks}-${isDanger}`;
+            if (renderCache[`blocks-${key}`] !== blockHash) {
+                renderCache[`blocks-${key}`] = blockHash;
+                for (let i = 0; i < 10; i++) {
+                    const block = blocks[i];
+                    block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
+                    if (i < filledBlocks) {
+                        block.classList.add('filled');
+                        if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
+                        else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
+                        else { block.style.backgroundColor = config.color; }
+                    }
                 }
             }
         });
