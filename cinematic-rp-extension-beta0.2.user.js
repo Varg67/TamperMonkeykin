@@ -392,10 +392,10 @@
                             const text = node.textContent || "";
                             if (!text.includes('"loc"')) return;
 
-                            const regex = /\{[\s\S]*"loc"[\s\S]*\}/g;
-                            const matches = text.match(regex);
-                            if (matches && matches.length > 0) {
-                                const jsonStr = matches[matches.length - 1];
+                            const firstBrace = text.indexOf('{');
+                            const lastBrace = text.lastIndexOf('}');
+                            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                const jsonStr = text.substring(firstBrace, lastBrace + 1);
                                 let parent = node.parentElement;
                                 if(parent && !parent.hasAttribute('data-rp-parsed')) {
                                     parent.setAttribute('data-rp-parsed', 'true');
