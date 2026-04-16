@@ -479,16 +479,22 @@
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        // Security: Prevent API key DOM exposure by using placeholders instead of setting .value
+        if (savedKeys.k) document.getElementById('inp-api-k').placeholder = 'Key saved (General)';
+        if (savedKeys.c) document.getElementById('inp-api-c').placeholder = 'Key saved (Character)';
+        if (savedKeys.g) document.getElementById('inp-api-g').placeholder = 'Key saved (Gemini)';
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
             // Security: Sanitize newlines to prevent HTTP Header Injection
             const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            const inpK = document.getElementById('inp-api-k');
+            const inpC = document.getElementById('inp-api-c');
+            const inpG = document.getElementById('inp-api-g');
+
+            if (inpK.value) { gameState.apiKeys.k = sanitizeKey(inpK.value); inpK.value = ''; inpK.placeholder = 'Key saved (General)'; }
+            if (inpC.value) { gameState.apiKeys.c = sanitizeKey(inpC.value); inpC.value = ''; inpC.placeholder = 'Key saved (Character)'; }
+            if (inpG.value) { gameState.apiKeys.g = sanitizeKey(inpG.value); inpG.value = ''; inpG.placeholder = 'Key saved (Gemini)'; }
+
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
             showLog('[KEYS SAVED]', '#4ade80');
         });
@@ -551,9 +557,13 @@
 
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
-            // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            // Security: Prevent header injection by removing newlines and fallback to saved keys if input is empty
+            const rawTargetVal = document.getElementById(`inp-api-${type}`).value;
+            const rawKeyK = document.getElementById('inp-api-k').value;
+
+            const targetVal = (rawTargetVal || gameState.apiKeys[type] || '').replace(/[\r\n]/g, '').trim();
+            const keyK = (rawKeyK || gameState.apiKeys.k || '').replace(/[\r\n]/g, '').trim();
+
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
