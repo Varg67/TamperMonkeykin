@@ -258,21 +258,42 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        if (domCache.locText.textContent !== `📍 ${gameState.loc}`) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+        }
+        const tokensText = gameState.tokens + 'T';
+        if (domCache.tokens.textContent !== tokensText) {
+            domCache.tokens.textContent = tokensText;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const roundedVal = Math.round(stat.val);
+            const valText = `${roundedVal}%`;
+
+            if (domCache[`val-${key}`].textContent !== valText) {
+                domCache[`val-${key}`].textContent = valText;
+            }
+
+            if (key === 'pleasure') {
+                const displayStyle = stat.val > 0 ? 'flex' : 'none';
+                if (domCache._pleasureDisplay !== displayStyle) {
+                    domCache.pleasureStat.style.display = displayStyle;
+                    domCache._pleasureDisplay = displayStyle;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
+
+            const stateHash = `${roundedVal}_${filledBlocks}_${isDanger}`;
+            if (domCache[`hash-${key}`] === stateHash) return;
+            domCache[`hash-${key}`] = stateHash;
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
