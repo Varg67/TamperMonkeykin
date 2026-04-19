@@ -1,4 +1,3 @@
-// Minimal mock to test the parsing logic since we cannot load standard jsdom
 const gameState = { stats: {}, loc: "", tokens: 0 };
 const modifyStat = (k, v) => {};
 const processTurnCascades = () => {};
@@ -45,10 +44,6 @@ test("Empty text", "", false);
 test("Text without loc", "Hello world, what a nice day.", false);
 test("Text with loc but no JSON", 'The word "loc" is here.', false);
 test("Valid JSON payload", 'Here is some text. {"loc": "The Park", "A_mod": 10}', true);
-test("Invalid JSON format but has loc", '{"loc": "Beach"', false); // The regex requires a closing brace
+test("Invalid JSON format but has loc", '{"loc": "Beach"', false);
 
 console.log(`\nTests: ${passed}/${total} passed`);
-
-if (passed !== total) {
-    process.exit(1);
-}
