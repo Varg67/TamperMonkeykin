@@ -15,12 +15,17 @@ const simulateObserver = (nodeText) => {
     const text = nodeText || "";
     if (!text.includes('"loc"')) return false;
 
-    const regex = /\{[\s\S]*"loc"[\s\S]*\}/g;
-    const matches = text.match(regex);
-    if (matches && matches.length > 0) {
-        const jsonStr = matches[matches.length - 1];
-        parseLLMPayload(jsonStr);
-        return true;
+    // Performance optimization: Avoid greedy regex backtracking (ReDoS) by using
+    // O(N) native string operations to isolate the JSON payload.
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+        const jsonStr = text.substring(firstBrace, lastBrace + 1);
+        if (jsonStr.includes('"loc"')) {
+            parseLLMPayload(jsonStr);
+            return true;
+        }
     }
     return false;
 };
