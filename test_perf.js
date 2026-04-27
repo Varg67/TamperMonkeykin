@@ -17,7 +17,6 @@ const simulateObserver = (nodeText) => {
 
     const firstBrace = text.indexOf('{');
     const lastBrace = text.lastIndexOf('}');
-
     if (firstBrace !== -1 && lastBrace > firstBrace) {
         const jsonStr = text.substring(firstBrace, lastBrace + 1);
         if (jsonStr.includes('"loc"')) {
