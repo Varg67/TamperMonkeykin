@@ -1,4 +1,3 @@
-// Minimal mock to test the parsing logic since we cannot load standard jsdom
 const gameState = { stats: {}, loc: "", tokens: 0 };
 const modifyStat = (k, v) => {};
 const processTurnCascades = () => {};
