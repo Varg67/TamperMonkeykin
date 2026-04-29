@@ -104,7 +104,8 @@
 
             .knd-btn-ping { background: rgba(80, 255, 120, 0.1); border: 1px solid rgba(80, 255, 120, 0.3); color: #4ade80; cursor: pointer; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: bold; }
             .knd-btn-action { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; text-align: center; }
-            .knd-btn-action:hover { background: rgba(59, 130, 246, 0.4); color: #fff; }
+            .knd-btn-ping:disabled, .knd-btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+            .knd-btn-action:not(:disabled):hover { background: rgba(59, 130, 246, 0.4); color: #fff; }
             .knd-btn-action.green { background: rgba(80, 255, 120, 0.2); border-color: rgba(80, 255, 120, 0.5); color: #4ade80; }
 
             #knd-hud-wrapper.minimized #knd-hud-body, #knd-hud-wrapper.minimized #knd-hud-footer, #knd-hud-wrapper.minimized #knd-hud-settings, #knd-hud-wrapper.minimized #knd-hud-journal { display: none !important; }
@@ -507,7 +508,10 @@
         };
 
         // ACTION: SEND JOURNAL
-        document.getElementById('knd-send-journal').addEventListener('click', async () => {
+        document.getElementById('knd-send-journal').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const originalText = btn.textContent;
+
             const entry = document.getElementById('knd-journal-text').value.trim();
             const keysRaw = document.getElementById('knd-journal-keys').value.trim();
 
@@ -523,33 +527,42 @@
             const keyphrases = keysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
             showLog('[SENDING TO MEMORY...]', '#eab308');
 
-            try {
-                const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${safeKeyK}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ai_id: safeKeyC,
-                        entry: entry,
-                        keyphrases: keyphrases
-                    })
-                });
+            btn.disabled = true;
+            btn.textContent = 'SENDING...';
 
-                if(res.ok) {
-                    showLog('[MEMORY SAVED SUCCESSFULLY]', '#4ade80');
-                    document.getElementById('knd-journal-text').value = '';
-                    document.getElementById('knd-journal-keys').value = '';
-                } else {
-                    throw new Error();
+            try {
+                try {
+                    const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${safeKeyK}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ai_id: safeKeyC,
+                            entry: entry,
+                            keyphrases: keyphrases
+                        })
+                    });
+
+                    if(res.ok) {
+                        showLog('[MEMORY SAVED SUCCESSFULLY]', '#4ade80');
+                        document.getElementById('knd-journal-text').value = '';
+                        document.getElementById('knd-journal-keys').value = '';
+                    } else {
+                        throw new Error();
+                    }
+                } catch (e) {
+                    showLog('[FAILED TO SAVE MEMORY]', '#ef4444');
                 }
-            } catch (e) {
-                showLog('[FAILED TO SAVE MEMORY]', '#ef4444');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         });
 
         const pingAPI = async (type) => {
+            const btn = document.getElementById('btn-ping-' + type);
             const icon = document.getElementById(`icon-${type}`);
             // Security: Prevent header injection by removing newlines
             const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
@@ -557,32 +570,42 @@
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
+
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '...';
+
             try {
-                let success = false;
-                if (type === 'g') {
-                    // Security: URL Encode API key to prevent injection
-                    const res = await gmFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(targetVal)}`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
-                    });
-                    success = res.ok;
-                } else if (type === 'k') {
-                    const res = await gmFetch("https://api.kindroid.ai/v1/check-user-subscription", {
-                        method: 'POST', headers: { 'Authorization': `Bearer ${targetVal}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({})
-                    });
-                    success = res.ok;
-                } else if (type === 'c') {
-                    if(!keyK) throw new Error();
-                    const res = await gmFetch("https://api.kindroid.ai/v1/update-info", {
-                        method: 'POST', headers: { 'Authorization': `Bearer ${keyK}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ai_id: targetVal }) // ai_id is sent in JSON body, safe
-                    });
-                    success = res.ok;
-                }
-                icon.className = success ? 'online' : 'error';
-                if(success) gameState.apiKeys[type] = targetVal;
-            } catch (err) { icon.className = 'knd-status-icon error'; }
+                try {
+                    let success = false;
+                    if (type === 'g') {
+                        // Security: URL Encode API key to prevent injection
+                        const res = await gmFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(targetVal)}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+                        });
+                        success = res.ok;
+                    } else if (type === 'k') {
+                        const res = await gmFetch("https://api.kindroid.ai/v1/check-user-subscription", {
+                            method: 'POST', headers: { 'Authorization': `Bearer ${targetVal}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({})
+                        });
+                        success = res.ok;
+                    } else if (type === 'c') {
+                        if(!keyK) throw new Error();
+                        const res = await gmFetch("https://api.kindroid.ai/v1/update-info", {
+                            method: 'POST', headers: { 'Authorization': `Bearer ${keyK}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ai_id: targetVal }) // ai_id is sent in JSON body, safe
+                        });
+                        success = res.ok;
+                    }
+                    icon.className = success ? 'online' : 'error';
+                    if(success) gameState.apiKeys[type] = targetVal;
+                } catch (err) { icon.className = 'knd-status-icon error'; }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         };
 
         document.getElementById('btn-ping-k').addEventListener('click', () => pingAPI('k'));
