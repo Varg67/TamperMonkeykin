@@ -133,6 +133,7 @@
     // 3. UI RENDER ENGINE
     // ==========================================
     const domCache = {};
+    const stateCache = { loc: null, tokens: null, pleasureDisplay: null, stats: {} };
     const createElement = (tag, id, className, textContent, attributes = {}) => {
         const el = document.createElement(tag);
         if (id) el.id = id;
@@ -258,30 +259,56 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const newLoc = `📍 ${gameState.loc}`;
+        if (stateCache.loc !== newLoc) {
+            domCache.locText.textContent = newLoc;
+            stateCache.loc = newLoc;
+        }
+
+        const newTokens = gameState.tokens + 'T';
+        if (stateCache.tokens !== newTokens) {
+            domCache.tokens.textContent = newTokens;
+            stateCache.tokens = newTokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            if (!stateCache.stats[key]) stateCache.stats[key] = {};
+
+            const newValText = `${Math.round(stat.val)}%`;
+            if (stateCache.stats[key].valText !== newValText) {
+                domCache[`val-${key}`].textContent = newValText;
+                stateCache.stats[key].valText = newValText;
+            }
+
+            if (key === 'pleasure') {
+                const newDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (stateCache.pleasureDisplay !== newDisplay) {
+                    domCache.pleasureStat.style.display = newDisplay;
+                    stateCache.pleasureDisplay = newDisplay;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
 
-            for (let i = 0; i < 10; i++) {
-                const block = blocks[i];
-                block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
-                if (i < filledBlocks) {
-                    block.classList.add('filled');
-                    if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
-                    else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
-                    else { block.style.backgroundColor = config.color; }
+            const blockHash = `${filledBlocks}_${isDanger}`;
+            if (stateCache.stats[key].blockHash !== blockHash) {
+                stateCache.stats[key].blockHash = blockHash;
+                for (let i = 0; i < 10; i++) {
+                    const block = blocks[i];
+                    block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
+                    if (i < filledBlocks) {
+                        block.classList.add('filled');
+                        if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
+                        else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
+                        else { block.style.backgroundColor = config.color; }
+                    }
                 }
             }
         });
