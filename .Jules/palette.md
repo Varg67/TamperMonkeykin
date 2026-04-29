@@ -1,3 +1,7 @@
 ## 2024-04-07 - Accessible Form & Icon Buttons Update
 **Learning:** Purely visual DOM structures, such as using `span` for buttons or implicit `label` proximity without the `for` attribute, cause screen readers to ignore interactions and field descriptions. This UI component pattern required explicit element upgrades.
 **Action:** Always replace icon-only `span` controls with proper `<button>` elements including `aria-label`s, and ensure every `<label>` uses the `for` attribute bound to its associated `<input>` ID. Also ensure that custom control buttons use `:focus-visible` styles for better keyboard accessibility.
+
+## 2024-05-14 - Implementing Async Loading States for Action Buttons
+**Learning:** Preventing duplicate submissions during asynchronous API requests provides critical, immediate feedback. Users can easily misclick or assume the interface is frozen if interactive components (like custom `btn-ping` or `btn-action` buttons) remain fully active and their text does not indicate processing.
+**Action:** When making asynchronous requests from button event listeners, dynamically cache the button's `textContent`, set its state to `:disabled`, change its text to a loading indicator (e.g. "SENDING..." or "..."), and wrap the `fetch` logic inside an outer `try/finally` block to guarantee the UI is restored even if errors are thrown inside inner catch blocks. Apply `:disabled` opacity CSS properties, and ensure pseudo-classes like `:hover` are overridden using `:not(:disabled):hover`.
