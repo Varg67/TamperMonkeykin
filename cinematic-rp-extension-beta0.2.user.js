@@ -258,16 +258,24 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const newLocText = `📍 ${gameState.loc}`;
+        if (domCache.locText.textContent !== newLocText) domCache.locText.textContent = newLocText;
+
+        const newTokensText = gameState.tokens + 'T';
+        if (domCache.tokens.textContent !== newTokensText) domCache.tokens.textContent = newTokensText;
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const newValText = `${Math.round(stat.val)}%`;
+            if (domCache[`val-${key}`].textContent !== newValText) domCache[`val-${key}`].textContent = newValText;
+
+            if (key === 'pleasure') {
+                const newDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (domCache.pleasureStat.style.display !== newDisplay) domCache.pleasureStat.style.display = newDisplay;
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
@@ -276,12 +284,28 @@
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
-                block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
+                let newClassName = 'knd-block';
+                let newBgColor = '';
+                let newColor = '';
+
                 if (i < filledBlocks) {
-                    block.classList.add('filled');
-                    if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
-                    else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
-                    else { block.style.backgroundColor = config.color; }
+                    newClassName += ' filled';
+                    if (key === 'pleasure' && filledBlocks >= 9) newClassName += ' climax';
+                    else if (isDanger) { newClassName += ' danger'; newBgColor = config.danger; newColor = config.danger; }
+                    else { newBgColor = config.color; }
+                }
+
+                if (block._kndClassName !== newClassName) {
+                    block.className = newClassName;
+                    block._kndClassName = newClassName;
+                }
+                if (block._kndBgColor !== newBgColor) {
+                    block.style.backgroundColor = newBgColor;
+                    block._kndBgColor = newBgColor;
+                }
+                if (block._kndColor !== newColor) {
+                    block.style.color = newColor;
+                    block._kndColor = newColor;
                 }
             }
         });
