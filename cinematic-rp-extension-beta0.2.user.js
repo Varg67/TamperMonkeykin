@@ -479,17 +479,40 @@
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        const updatePlaceholder = (id, key, defaultPlaceholder) => {
+            const el = document.getElementById(id);
+            el.placeholder = key ? '******** (Saved)' : defaultPlaceholder;
+            el.value = '';
+        };
+
+        updatePlaceholder('inp-api-k', savedKeys.k, 'sk-kindroid...');
+        updatePlaceholder('inp-api-c', savedKeys.c, 'Kin ID...');
+        updatePlaceholder('inp-api-g', savedKeys.g, 'AIzaSy...');
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
             // Security: Sanitize newlines to prevent HTTP Header Injection
-            const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            const processKey = (id, currentKey) => {
+                const el = document.getElementById(id);
+                const val = el.value;
+                if (val === '') {
+                    return currentKey; // Untouched
+                }
+                if (val.trim() === '') {
+                    return ''; // Intentional clear
+                }
+                return val.replace(/[\r\n]/g, '').trim();
+            };
+
+            gameState.apiKeys.k = processKey('inp-api-k', gameState.apiKeys.k);
+            gameState.apiKeys.c = processKey('inp-api-c', gameState.apiKeys.c);
+            gameState.apiKeys.g = processKey('inp-api-g', gameState.apiKeys.g);
+
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+
+            updatePlaceholder('inp-api-k', gameState.apiKeys.k, 'sk-kindroid...');
+            updatePlaceholder('inp-api-c', gameState.apiKeys.c, 'Kin ID...');
+            updatePlaceholder('inp-api-g', gameState.apiKeys.g, 'AIzaSy...');
+
             showLog('[KEYS SAVED]', '#4ade80');
         });
 
@@ -511,9 +534,12 @@
             const entry = document.getElementById('knd-journal-text').value.trim();
             const keysRaw = document.getElementById('knd-journal-keys').value.trim();
 
-            // Security: Sanitize stored keys before using in headers
-            const safeKeyK = (gameState.apiKeys.k || '').replace(/[\r\n]/g, '').trim();
-            const safeKeyC = (gameState.apiKeys.c || '').replace(/[\r\n]/g, '').trim();
+            // Security: Prioritize input field, fallback to saved keys, then sanitize
+            const rawKeyK = document.getElementById('inp-api-k').value || gameState.apiKeys.k || '';
+            const rawKeyC = document.getElementById('inp-api-c').value || gameState.apiKeys.c || '';
+
+            const safeKeyK = rawKeyK.replace(/[\r\n]/g, '').trim();
+            const safeKeyC = rawKeyC.replace(/[\r\n]/g, '').trim();
 
             if(!entry || !safeKeyK || !safeKeyC) {
                 showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
@@ -551,9 +577,12 @@
 
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
-            // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            // Security: Prioritize input field, fallback to saved keys, then sanitize
+            const rawTargetVal = document.getElementById(`inp-api-${type}`).value || gameState.apiKeys[type] || '';
+            const rawKeyK = document.getElementById('inp-api-k').value || gameState.apiKeys.k || '';
+
+            const targetVal = rawTargetVal.replace(/[\r\n]/g, '').trim();
+            const keyK = rawKeyK.replace(/[\r\n]/g, '').trim();
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
