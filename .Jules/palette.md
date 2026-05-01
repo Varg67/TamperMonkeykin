@@ -1,3 +1,7 @@
 ## 2024-04-07 - Accessible Form & Icon Buttons Update
 **Learning:** Purely visual DOM structures, such as using `span` for buttons or implicit `label` proximity without the `for` attribute, cause screen readers to ignore interactions and field descriptions. This UI component pattern required explicit element upgrades.
 **Action:** Always replace icon-only `span` controls with proper `<button>` elements including `aria-label`s, and ensure every `<label>` uses the `for` attribute bound to its associated `<input>` ID. Also ensure that custom control buttons use `:focus-visible` styles for better keyboard accessibility.
+
+## 2026-05-01 - Prevent Double Submissions with Restorable Loading States
+**Learning:** For Tampermonkey userscripts where page reloads don't happen, it's crucial to disable async action buttons to prevent double submissions. However, hardcoding the original button text when restoring state after a `finally` block can break if translations or dynamic labels are used elsewhere.
+**Action:** Always dynamically cache the element's `textContent` before mutation (e.g. `const originalText = btn.textContent`), apply the disabled state and loading text, and use the cached variable to safely restore the original text inside a `try/finally` block. Combine this with `:not(:disabled)` in CSS `:hover` states to ensure the button doesn't provide active visual feedback while disabled.
