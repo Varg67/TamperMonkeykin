@@ -250,6 +250,7 @@
         domCache.locText = document.getElementById('knd-loc-text');
         domCache.tokens = document.getElementById('knd-tokens');
         domCache.pleasureStat = document.getElementById('stat-pleasure');
+        domCache.footer = document.getElementById('knd-hud-footer');
 
         Object.keys(gameState.stats).forEach(key => {
             domCache[`val-${key}`] = document.getElementById(`val-${key}`);
@@ -288,7 +289,9 @@
     };
 
     const showLog = (text, color) => {
-        const footer = document.getElementById('knd-hud-footer');
+        // ⚡ Bolt: Cache DOM elements to prevent redundant queries
+        const footer = domCache.footer;
+        if (!footer) return;
         const span = document.createElement('span');
         span.className = 'knd-floating-text'; span.style.color = color; span.textContent = text;
         footer.appendChild(span);
