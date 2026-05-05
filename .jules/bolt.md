@@ -1,3 +1,6 @@
 ## 2024-05-18 - [Preventing Layout Thrashing in MutationObservers]
 **Learning:** Found a performance bottleneck in `cinematic-rp-extension-beta0.2.user.js` where a `MutationObserver` used `node.textContent || node.innerText || ""`. Accessing `innerText` forces a synchronous layout recalculation (reflow), which is extremely expensive when executed repeatedly on every added node. Furthermore, a heavy regex was being run on every text node.
 **Action:** Removed the `innerText` fallback and introduced an early return fast-path (`if (!text.includes('"loc"')) return;`) to bypass the regex when the target keyword is absent. Always prefer `textContent` in observers to avoid layout thrashing, and use cheap string checks before expensive regex operations.
+## 2024-05-18 - [Cache DOM queries in high-frequency functions]
+**Learning:** The `showLog` function is called frequently to render updates to the user, and querying the DOM inside it using `document.getElementById('knd-hud-footer')` repeatedly is inefficient and degrades performance.
+**Action:** For optimal performance in high-frequency functions, DOM element references should be cached in the `domCache` object during the initialization phase (`cacheDOM`) to avoid redundant `document.getElementById` or `querySelector` calls.
