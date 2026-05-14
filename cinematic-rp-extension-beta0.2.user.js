@@ -479,17 +479,28 @@
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        // Security: Use mask string to prevent exposing keys to host page DOM
+        const MASK = '••••••••••••••••';
+        const getRealValue = (elId, memKey) => {
+            const val = document.getElementById(elId).value;
+            return val === MASK ? (gameState.apiKeys[memKey] || '') : val;
+        };
+
+        document.getElementById('inp-api-k').value = savedKeys.k ? MASK : '';
+        document.getElementById('inp-api-c').value = savedKeys.c ? MASK : '';
+        document.getElementById('inp-api-g').value = savedKeys.g ? MASK : '';
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
             // Security: Sanitize newlines to prevent HTTP Header Injection
             const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            gameState.apiKeys.k = sanitizeKey(getRealValue('inp-api-k', 'k'));
+            gameState.apiKeys.c = sanitizeKey(getRealValue('inp-api-c', 'c'));
+            gameState.apiKeys.g = sanitizeKey(getRealValue('inp-api-g', 'g'));
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+
+            document.getElementById('inp-api-k').value = gameState.apiKeys.k ? MASK : '';
+            document.getElementById('inp-api-c').value = gameState.apiKeys.c ? MASK : '';
+            document.getElementById('inp-api-g').value = gameState.apiKeys.g ? MASK : '';
             showLog('[KEYS SAVED]', '#4ade80');
         });
 
@@ -552,8 +563,8 @@
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
             // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            const targetVal = getRealValue(`inp-api-${type}`, type).replace(/[\r\n]/g, '').trim();
+            const keyK = getRealValue('inp-api-k', 'k').replace(/[\r\n]/g, '').trim();
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
