@@ -104,8 +104,9 @@
 
             .knd-btn-ping { background: rgba(80, 255, 120, 0.1); border: 1px solid rgba(80, 255, 120, 0.3); color: #4ade80; cursor: pointer; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: bold; }
             .knd-btn-action { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; text-align: center; }
-            .knd-btn-action:hover { background: rgba(59, 130, 246, 0.4); color: #fff; }
+            .knd-btn-action:not(:disabled):hover { background: rgba(59, 130, 246, 0.4); color: #fff; }
             .knd-btn-action.green { background: rgba(80, 255, 120, 0.2); border-color: rgba(80, 255, 120, 0.5); color: #4ade80; }
+            .knd-btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
 
             #knd-hud-wrapper.minimized #knd-hud-body, #knd-hud-wrapper.minimized #knd-hud-footer, #knd-hud-wrapper.minimized #knd-hud-settings, #knd-hud-wrapper.minimized #knd-hud-journal { display: none !important; }
             #knd-hud-body { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
@@ -507,23 +508,28 @@
         };
 
         // ACTION: SEND JOURNAL
-        document.getElementById('knd-send-journal').addEventListener('click', async () => {
-            const entry = document.getElementById('knd-journal-text').value.trim();
-            const keysRaw = document.getElementById('knd-journal-keys').value.trim();
-
-            // Security: Sanitize stored keys before using in headers
-            const safeKeyK = (gameState.apiKeys.k || '').replace(/[\r\n]/g, '').trim();
-            const safeKeyC = (gameState.apiKeys.c || '').replace(/[\r\n]/g, '').trim();
-
-            if(!entry || !safeKeyK || !safeKeyC) {
-                showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
-                return;
-            }
-
-            const keyphrases = keysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            showLog('[SENDING TO MEMORY...]', '#eab308');
+        document.getElementById('knd-send-journal').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'SENDING...';
 
             try {
+                const entry = document.getElementById('knd-journal-text').value.trim();
+                const keysRaw = document.getElementById('knd-journal-keys').value.trim();
+
+                // Security: Sanitize stored keys before using in headers
+                const safeKeyK = (gameState.apiKeys.k || '').replace(/[\r\n]/g, '').trim();
+                const safeKeyC = (gameState.apiKeys.c || '').replace(/[\r\n]/g, '').trim();
+
+                if(!entry || !safeKeyK || !safeKeyC) {
+                    showLog('[ERROR: MISSING DATA OR KEYS]', '#ef4444');
+                    return;
+                }
+
+                const keyphrases = keysRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                showLog('[SENDING TO MEMORY...]', '#eab308');
+
                 const res = await gmFetch("https://api.kindroid.ai/v1/journal-create", {
                     method: 'POST',
                     headers: {
@@ -544,8 +550,11 @@
                 } else {
                     throw new Error();
                 }
-            } catch (e) {
+            } catch (err) {
                 showLog('[FAILED TO SAVE MEMORY]', '#ef4444');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         });
 
