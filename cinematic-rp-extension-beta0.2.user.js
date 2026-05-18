@@ -258,21 +258,47 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        // ⚡ Bolt Optimization: DOM Write Caching
+        const newLoc = `📍 ${gameState.loc}`;
+        if (domCache._lastLoc !== newLoc) {
+            domCache.locText.textContent = newLoc;
+            domCache._lastLoc = newLoc;
+        }
+
+        const newTokens = gameState.tokens + 'T';
+        if (domCache._lastTokens !== newTokens) {
+            domCache.tokens.textContent = newTokens;
+            domCache._lastTokens = newTokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const newValText = `${Math.round(stat.val)}%`;
+            if (domCache[`_lastVal-${key}`] !== newValText) {
+                domCache[`val-${key}`].textContent = newValText;
+                domCache[`_lastVal-${key}`] = newValText;
+            }
+
+            if (key === 'pleasure') {
+                const newDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (domCache._lastPleasureDisplay !== newDisplay) {
+                    domCache.pleasureStat.style.display = newDisplay;
+                    domCache._lastPleasureDisplay = newDisplay;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
+
+            // Hash the visual state of the 10 blocks to skip redundant iterations
+            const blocksHash = `${filledBlocks}-${isDanger}`;
+            if (domCache[`_lastBlocksHash-${key}`] === blocksHash) return;
+            domCache[`_lastBlocksHash-${key}`] = blocksHash;
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
