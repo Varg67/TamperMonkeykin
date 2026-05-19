@@ -1,3 +1,7 @@
 ## 2024-04-07 - Accessible Form & Icon Buttons Update
 **Learning:** Purely visual DOM structures, such as using `span` for buttons or implicit `label` proximity without the `for` attribute, cause screen readers to ignore interactions and field descriptions. This UI component pattern required explicit element upgrades.
 **Action:** Always replace icon-only `span` controls with proper `<button>` elements including `aria-label`s, and ensure every `<label>` uses the `for` attribute bound to its associated `<input>` ID. Also ensure that custom control buttons use `:focus-visible` styles for better keyboard accessibility.
+
+## 2024-05-19 - Asynchronous Button States
+**Learning:** For asynchronous API actions like sending journal data or pinging external servers, a lack of visual loading feedback or button disabled states leaves users unsure if their click was registered, often resulting in duplicated clicks and duplicate API requests. Providing immediate visual feedback and disabling the control is critical for solid UX and preventing race conditions.
+**Action:** Always wrap asynchronous operations in `try/finally` blocks to guarantee UI restoration. Upon clicking, dynamically cache the element's `textContent`, set its `disabled` property to `true`, and update the text to indicate loading (e.g., 'SENDING...'). Finally, apply scoped CSS to ensure disabled buttons receive the correct cursor and opacity without triggering hover styles.
