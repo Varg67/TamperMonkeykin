@@ -479,17 +479,33 @@
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
         gameState.apiKeys = savedKeys;
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        const MASK = '••••••••••••••••';
+
+        document.getElementById('inp-api-k').value = savedKeys.k ? MASK : '';
+        document.getElementById('inp-api-c').value = savedKeys.c ? MASK : '';
+        document.getElementById('inp-api-g').value = savedKeys.g ? MASK : '';
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
             // Security: Sanitize newlines to prevent HTTP Header Injection
             const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+
+            const getNewKey = (inputId, existingKey) => {
+                const val = document.getElementById(inputId).value;
+                if (val === MASK) return existingKey;
+                return sanitizeKey(val);
+            };
+
+            gameState.apiKeys.k = getNewKey('inp-api-k', gameState.apiKeys.k);
+            gameState.apiKeys.c = getNewKey('inp-api-c', gameState.apiKeys.c);
+            gameState.apiKeys.g = getNewKey('inp-api-g', gameState.apiKeys.g);
+
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+
+            // Re-apply masks
+            document.getElementById('inp-api-k').value = gameState.apiKeys.k ? MASK : '';
+            document.getElementById('inp-api-c').value = gameState.apiKeys.c ? MASK : '';
+            document.getElementById('inp-api-g').value = gameState.apiKeys.g ? MASK : '';
+
             showLog('[KEYS SAVED]', '#4ade80');
         });
 
