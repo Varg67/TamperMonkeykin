@@ -476,19 +476,48 @@
     // 7. API TOOLS (JOURNAL & PING)
     // ==========================================
     const initToolsLogic = () => {
-        const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
-        gameState.apiKeys = savedKeys;
+        let rawKeys;
+        try {
+            rawKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
+        } catch (e) {
+            rawKeys = { k: "", c: "", g: "" };
+        }
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        // Security: Sanitize loaded keys to handle legacy unsanitized data
+        const sanitizeKey = (val) => (val || '').replace(/[\r\n]/g, '').trim();
+        gameState.apiKeys = {
+            k: sanitizeKey(rawKeys.k),
+            c: sanitizeKey(rawKeys.c),
+            g: sanitizeKey(rawKeys.g)
+        };
+
+        const MASK = '••••••••••••••••';
+        const getMaskedValue = (inputId, storedKey) => {
+            const val = document.getElementById(inputId).value;
+            return val === MASK ? storedKey : val;
+        };
+
+        const setMaskedValue = (inputId, storedKey) => {
+            document.getElementById(inputId).value = storedKey ? MASK : '';
+        };
+
+        setMaskedValue('inp-api-k', gameState.apiKeys.k);
+        setMaskedValue('inp-api-c', gameState.apiKeys.c);
+        setMaskedValue('inp-api-g', gameState.apiKeys.g);
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
-            // Security: Sanitize newlines to prevent HTTP Header Injection
-            const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            const newK = getMaskedValue('inp-api-k', gameState.apiKeys.k);
+            const newC = getMaskedValue('inp-api-c', gameState.apiKeys.c);
+            const newG = getMaskedValue('inp-api-g', gameState.apiKeys.g);
+
+            gameState.apiKeys.k = sanitizeKey(newK);
+            gameState.apiKeys.c = sanitizeKey(newC);
+            gameState.apiKeys.g = sanitizeKey(newG);
+
+            setMaskedValue('inp-api-k', gameState.apiKeys.k);
+            setMaskedValue('inp-api-c', gameState.apiKeys.c);
+            setMaskedValue('inp-api-g', gameState.apiKeys.g);
+
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
             showLog('[KEYS SAVED]', '#4ade80');
         });
@@ -552,8 +581,14 @@
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
             // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            // Use the in-memory keys or the input value if it's not the mask
+            const MASK = '••••••••••••••••';
+            const getRealValue = (inputId, storedKey) => {
+                const val = document.getElementById(inputId).value;
+                return val === MASK ? storedKey : val;
+            };
+            const targetVal = getRealValue(`inp-api-${type}`, gameState.apiKeys[type]).replace(/[\r\n]/g, '').trim();
+            const keyK = getRealValue('inp-api-k', gameState.apiKeys.k).replace(/[\r\n]/g, '').trim();
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
