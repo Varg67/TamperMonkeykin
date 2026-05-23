@@ -250,6 +250,7 @@
         domCache.locText = document.getElementById('knd-loc-text');
         domCache.tokens = document.getElementById('knd-tokens');
         domCache.pleasureStat = document.getElementById('stat-pleasure');
+        domCache.state = {}; // Added for DOM write caching
 
         Object.keys(gameState.stats).forEach(key => {
             domCache[`val-${key}`] = document.getElementById(`val-${key}`);
@@ -258,21 +259,45 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const newLocText = `📍 ${gameState.loc}`;
+        if (domCache.state.locText !== newLocText) {
+            domCache.locText.textContent = newLocText;
+            domCache.state.locText = newLocText;
+        }
+
+        const newTokensText = gameState.tokens + 'T';
+        if (domCache.state.tokens !== newTokensText) {
+            domCache.tokens.textContent = newTokensText;
+            domCache.state.tokens = newTokensText;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const newValText = `${Math.round(stat.val)}%`;
+            if (domCache.state[`val-${key}`] !== newValText) {
+                domCache[`val-${key}`].textContent = newValText;
+                domCache.state[`val-${key}`] = newValText;
+            }
+
+            if (key === 'pleasure') {
+                const newDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (domCache.state.pleasureDisplay !== newDisplay) {
+                    domCache.pleasureStat.style.display = newDisplay;
+                    domCache.state.pleasureDisplay = newDisplay;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
+
+            const visualHash = `${filledBlocks}-${isDanger}`;
+            if (domCache.state[`blocks-${key}`] === visualHash) return;
+            domCache.state[`blocks-${key}`] = visualHash;
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
