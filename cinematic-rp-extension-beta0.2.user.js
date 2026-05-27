@@ -392,15 +392,19 @@
                             const text = node.textContent || "";
                             if (!text.includes('"loc"')) return;
 
-                            const regex = /\{[\s\S]*"loc"[\s\S]*\}/g;
-                            const matches = text.match(regex);
-                            if (matches && matches.length > 0) {
-                                const jsonStr = matches[matches.length - 1];
-                                let parent = node.parentElement;
-                                if(parent && !parent.hasAttribute('data-rp-parsed')) {
-                                    parent.setAttribute('data-rp-parsed', 'true');
-                                    gameState.tokens += Math.ceil(text.length / 4);
-                                    parseLLMPayload(jsonStr);
+                            // ⚡ Bolt: Replaced greedy regex with O(N) string operations
+                            // to prevent catastrophic backtracking (ReDoS) on large text nodes
+                            const startIdx = text.indexOf('{');
+                            const endIdx = text.lastIndexOf('}');
+                            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                                const jsonStr = text.substring(startIdx, endIdx + 1);
+                                if (jsonStr.includes('"loc"')) {
+                                    let parent = node.parentElement;
+                                    if(parent && !parent.hasAttribute('data-rp-parsed')) {
+                                        parent.setAttribute('data-rp-parsed', 'true');
+                                        gameState.tokens += Math.ceil(text.length / 4);
+                                        parseLLMPayload(jsonStr);
+                                    }
                                 }
                             }
                         }
