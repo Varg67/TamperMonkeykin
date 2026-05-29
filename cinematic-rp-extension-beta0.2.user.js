@@ -258,30 +258,56 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        // DOM Write Caching: Prevent unnecessary layout recalculations by checking visual state hash
+        const newLocText = `📍 ${gameState.loc}`;
+        if (domCache.locText._lastText !== newLocText) {
+            domCache.locText.textContent = newLocText;
+            domCache.locText._lastText = newLocText;
+        }
+
+        const newTokensText = gameState.tokens + 'T';
+        if (domCache.tokens._lastText !== newTokensText) {
+            domCache.tokens.textContent = newTokensText;
+            domCache.tokens._lastText = newTokensText;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const newValText = `${Math.round(stat.val)}%`;
+            if (domCache[`val-${key}`]._lastText !== newValText) {
+                domCache[`val-${key}`].textContent = newValText;
+                domCache[`val-${key}`]._lastText = newValText;
+            }
+
+            if (key === 'pleasure') {
+                const newDisplay = stat.val > 0 ? 'flex' : 'none';
+                if (domCache.pleasureStat._lastDisplay !== newDisplay) {
+                    domCache.pleasureStat.style.display = newDisplay;
+                    domCache.pleasureStat._lastDisplay = newDisplay;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
 
-            for (let i = 0; i < 10; i++) {
-                const block = blocks[i];
-                block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
-                if (i < filledBlocks) {
-                    block.classList.add('filled');
-                    if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
-                    else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
-                    else { block.style.backgroundColor = config.color; }
+            // DOM Write Caching: Skip looping over 10 child node blocks if visual state hasn't changed
+            const renderHash = `${filledBlocks}-${isDanger}`;
+            if (stat._lastRenderHash !== renderHash) {
+                stat._lastRenderHash = renderHash;
+                for (let i = 0; i < 10; i++) {
+                    const block = blocks[i];
+                    block.className = 'knd-block'; block.style.backgroundColor = ''; block.style.color = '';
+                    if (i < filledBlocks) {
+                        block.classList.add('filled');
+                        if (key === 'pleasure' && filledBlocks >= 9) block.classList.add('climax');
+                        else if (isDanger) { block.classList.add('danger'); block.style.backgroundColor = config.danger; block.style.color = config.danger; }
+                        else { block.style.backgroundColor = config.color; }
+                    }
                 }
             }
         });
