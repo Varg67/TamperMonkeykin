@@ -2,3 +2,8 @@
 **Vulnerability:** Untrusted input (`targetVal`) injected directly into URL query parameters (`gemini-2.5-flash:generateContent?key=${targetVal}`) and HTTP Authorization Headers (`Bearer ${gameState.apiKeys.k}`). Error objects from JSON parsing were directly logged to the console.
 **Learning:** Userscripts interfacing with external APIs and parsing DOM-based data must validate, sanitize, and encode data precisely as server-side code would. Unsanitized input into query strings can lead to SSRF or parameter pollution, and newlines in tokens can lead to HTTP Header Injection. Furthermore, directly printing unvalidated JSON payloads to `console.error` can lead to log injection or log-based XSS depending on the browser console implementation.
 **Prevention:** Always use `encodeURIComponent()` for variables inserted into URL structures. Call `.trim()` and reject newlines for any value used in an HTTP header. Strip raw input objects before logging to the console (e.g. log static strings). Add explicit `parseFloat()` bounds to numerical logic that originates from unstructured or untrusted input (LLM JSON).
+
+## 2024-05-15 - Exposing API Keys in DOM Attributes
+**Vulnerability:** API keys were directly injected into input `.value` attributes, exposing them to potentially malicious scripts from the host page.
+**Learning:** Hardcoding sensitive data or assigning it directly to DOM elements makes it accessible to any client-side JavaScript, compromising the user's keys.
+**Prevention:** Always use a dummy mask string (e.g., `••••••••••••••••`) in the DOM. Maintain the actual credentials securely in an in-memory or storage state, and use a helper function to resolve the real key unless the user intentionally clears the input.
