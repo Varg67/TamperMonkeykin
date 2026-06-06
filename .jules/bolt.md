@@ -1,3 +1,6 @@
 ## 2024-05-18 - [Preventing Layout Thrashing in MutationObservers]
 **Learning:** Found a performance bottleneck in `cinematic-rp-extension-beta0.2.user.js` where a `MutationObserver` used `node.textContent || node.innerText || ""`. Accessing `innerText` forces a synchronous layout recalculation (reflow), which is extremely expensive when executed repeatedly on every added node. Furthermore, a heavy regex was being run on every text node.
 **Action:** Removed the `innerText` fallback and introduced an early return fast-path (`if (!text.includes('"loc"')) return;`) to bypass the regex when the target keyword is absent. Always prefer `textContent` in observers to avoid layout thrashing, and use cheap string checks before expensive regex operations.
+## 2024-06-06 - [Preventing ReDoS in MutationObservers]
+**Learning:** Using greedy regex matching like `/{[\s\S]*"loc"[\s\S]*}/g` on potentially large, untrusted DOM text nodes inside a `MutationObserver` introduces catastrophic backtracking risks and severe performance degradation (O(N^2)).
+**Action:** Isolate JSON boundaries using fast, linear O(N) string operations like `indexOf('{')` and `lastIndexOf('}')` instead of regex when processing large DOM text nodes.
