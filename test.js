@@ -15,12 +15,15 @@ const simulateObserver = (nodeText) => {
     const text = nodeText || "";
     if (!text.includes('"loc"')) return false;
 
-    const regex = /\{[\s\S]*"loc"[\s\S]*\}/g;
-    const matches = text.match(regex);
-    if (matches && matches.length > 0) {
-        const jsonStr = matches[matches.length - 1];
-        parseLLMPayload(jsonStr);
-        return true;
+    const startIdx = text.indexOf('{');
+    const endIdx = text.lastIndexOf('}');
+
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        const jsonStr = text.substring(startIdx, endIdx + 1);
+        if (jsonStr.includes('"loc"')) {
+            parseLLMPayload(jsonStr);
+            return true;
+        }
     }
     return false;
 };
@@ -43,6 +46,8 @@ test("Text without loc", "Hello world, what a nice day.", false);
 test("Text with loc but no JSON", 'The word "loc" is here.', false);
 test("Valid JSON payload", 'Here is some text. {"loc": "The Park", "A_mod": 10}', true);
 test("Invalid JSON format but has loc", '{"loc": "Beach"', false); // The regex requires a closing brace
+test("Multiple JSON blocks", '{"other": 1} {"loc": "The Park", "A_mod": 10}', true);
+test("Keyword adjacent but outside braces", '"loc" here but JSON is {"other": 1}', false);
 
 console.log(`\nTests: ${passed}/${total} passed`);
 
