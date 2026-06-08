@@ -1,3 +1,6 @@
 ## 2024-05-18 - [Preventing Layout Thrashing in MutationObservers]
 **Learning:** Found a performance bottleneck in `cinematic-rp-extension-beta0.2.user.js` where a `MutationObserver` used `node.textContent || node.innerText || ""`. Accessing `innerText` forces a synchronous layout recalculation (reflow), which is extremely expensive when executed repeatedly on every added node. Furthermore, a heavy regex was being run on every text node.
 **Action:** Removed the `innerText` fallback and introduced an early return fast-path (`if (!text.includes('"loc"')) return;`) to bypass the regex when the target keyword is absent. Always prefer `textContent` in observers to avoid layout thrashing, and use cheap string checks before expensive regex operations.
+## 2026-06-08 - DOM Write Caching and Visual Hashing
+**Learning:** Repeatedly setting properties like `textContent` or `style` on elements triggers unnecessary DOM updates even if the value hasn't changed. In loops rendering UI components (like the blocks array), updating the DOM class and style for 10 elements per stat on every render is expensive.
+**Action:** Implemented caching checks. Used `visualHash` to skip redundant `for` loops entirely, and checked the new `textContent` and `style` variables against current/cached ones before re-applying changes.
