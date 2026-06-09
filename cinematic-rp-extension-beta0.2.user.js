@@ -250,6 +250,7 @@
         domCache.locText = document.getElementById('knd-loc-text');
         domCache.tokens = document.getElementById('knd-tokens');
         domCache.pleasureStat = document.getElementById('stat-pleasure');
+        domCache.footer = document.getElementById('knd-hud-footer');
 
         Object.keys(gameState.stats).forEach(key => {
             domCache[`val-${key}`] = document.getElementById(`val-${key}`);
@@ -258,21 +259,36 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const locTextStr = `📍 ${gameState.loc}`;
+        if (domCache.locText.textContent !== locTextStr) domCache.locText.textContent = locTextStr;
+
+        const tokenStr = gameState.tokens + 'T';
+        if (domCache.tokens.textContent !== tokenStr) domCache.tokens.textContent = tokenStr;
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
-            domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            const valStr = `${Math.round(stat.val)}%`;
+            if (domCache[`val-${key}`].textContent !== valStr) domCache[`val-${key}`].textContent = valStr;
+
+            if (key === 'pleasure') {
+                const displayStyle = stat.val > 0 ? 'flex' : 'none';
+                if (stat._cachedDisplay !== displayStyle) {
+                    domCache.pleasureStat.style.display = displayStyle;
+                    stat._cachedDisplay = displayStyle;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
             if(key === 'stress' && stat.val >= 80) isDanger = true;
             if(key === 'libido' && stat.val >= 80) isDanger = true;
+
+            const visualHash = `${filledBlocks}-${isDanger}`;
+            if (stat._visualHash === visualHash) return;
+            stat._visualHash = visualHash;
 
             for (let i = 0; i < 10; i++) {
                 const block = blocks[i];
@@ -288,7 +304,7 @@
     };
 
     const showLog = (text, color) => {
-        const footer = document.getElementById('knd-hud-footer');
+        const footer = domCache.footer || document.getElementById('knd-hud-footer');
         const span = document.createElement('span');
         span.className = 'knd-floating-text'; span.style.color = color; span.textContent = text;
         footer.appendChild(span);
