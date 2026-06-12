@@ -257,17 +257,40 @@
         });
     };
 
+    const lastRenderState = { loc: null, tokens: null, stats: {} };
+
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        const newLocText = `📍 ${gameState.loc}`;
+        if (lastRenderState.loc !== newLocText) {
+            domCache.locText.textContent = newLocText;
+            lastRenderState.loc = newLocText;
+        }
+
+        const newTokensText = gameState.tokens + 'T';
+        if (lastRenderState.tokens !== newTokensText) {
+            domCache.tokens.textContent = newTokensText;
+            lastRenderState.tokens = newTokensText;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
+            // ⚡ Bolt Optimization: Cache stat DOM writes to avoid massive layout thrashing
+            if (!lastRenderState.stats[key]) {
+                lastRenderState.stats[key] = { val: null };
+            }
+            if (lastRenderState.stats[key].val === stat.val) return;
+            lastRenderState.stats[key].val = stat.val;
+
             domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            if (key === 'pleasure') {
+                const displayValue = stat.val > 0 ? 'flex' : 'none';
+                if (domCache.pleasureStat.style.display !== displayValue) {
+                    domCache.pleasureStat.style.display = displayValue;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
