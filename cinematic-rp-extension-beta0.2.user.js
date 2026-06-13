@@ -257,17 +257,36 @@
         });
     };
 
+    // ⚡ Bolt: Cache visual state to prevent redundant DOM iterations and layout thrashing
+    const lastRenderState = { stats: {} };
+
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        if (lastRenderState.loc !== gameState.loc) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+            lastRenderState.loc = gameState.loc;
+        }
+        if (lastRenderState.tokens !== gameState.tokens) {
+            domCache.tokens.textContent = gameState.tokens + 'T';
+            lastRenderState.tokens = gameState.tokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
+            // ⚡ Bolt: Skip redundant block iteration and DOM writes if the value hasn't changed
+            if (lastRenderState.stats[key] === stat.val) return;
+            lastRenderState.stats[key] = stat.val;
+
             domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
-            if (key === 'pleasure') domCache.pleasureStat.style.display = stat.val > 0 ? 'flex' : 'none';
+            if (key === 'pleasure') {
+                const display = stat.val > 0 ? 'flex' : 'none';
+                if (lastRenderState.pleasureDisplay !== display) {
+                    domCache.pleasureStat.style.display = display;
+                    lastRenderState.pleasureDisplay = display;
+                }
+            }
 
             const filledBlocks = Math.ceil(stat.val / 10);
             let isDanger = (stat.type === 'negative' && stat.val >= 70) || (stat.type === 'positive' && stat.val <= 30);
