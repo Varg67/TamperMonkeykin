@@ -257,12 +257,19 @@
         });
     };
 
+    const lastRenderState = { stats: {} };
+
     const renderState = () => {
         domCache.locText.textContent = `📍 ${gameState.loc}`;
         domCache.tokens.textContent = gameState.tokens + 'T';
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
+
+            // ⚡ Bolt: Cache stat value to prevent redundant DOM block updates/reflows
+            if (lastRenderState.stats[key] === stat.val) return;
+            lastRenderState.stats[key] = stat.val;
+
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
