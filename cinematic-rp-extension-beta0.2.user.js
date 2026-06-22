@@ -37,6 +37,12 @@
         }
     };
 
+    const lastRenderState = {
+        loc: null,
+        tokens: null,
+        stats: {}
+    };
+
     const statConfig = {
         hunger:   { label: "HUNGER",    color: "#d97706", danger: "#b45309" }, // Taurus: Earth/Brown-Orange
         thirst:   { label: "THIRST",    color: "#0284c7", danger: "#0369a1" }, // Cancer: Deep Blue
@@ -258,11 +264,21 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        if (lastRenderState.loc !== gameState.loc) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+            lastRenderState.loc = gameState.loc;
+        }
+        if (lastRenderState.tokens !== gameState.tokens) {
+            domCache.tokens.textContent = gameState.tokens + 'T';
+            lastRenderState.tokens = gameState.tokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
+
+            if (lastRenderState.stats[key] === stat.val) return;
+            lastRenderState.stats[key] = stat.val;
+
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
