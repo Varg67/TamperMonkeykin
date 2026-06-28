@@ -257,12 +257,31 @@
         });
     };
 
+    const lastRenderState = {
+        loc: null,
+        tokens: null,
+        stats: {}
+    };
+
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        // Performance: Cache primitive values to bypass redundant DOM iterations
+        if (lastRenderState.loc !== gameState.loc) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+            lastRenderState.loc = gameState.loc;
+        }
+
+        if (lastRenderState.tokens !== gameState.tokens) {
+            domCache.tokens.textContent = gameState.tokens + 'T';
+            lastRenderState.tokens = gameState.tokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
+
+            // Fast-path early return if stat value is unchanged
+            if (lastRenderState.stats[key] === stat.val) return;
+            lastRenderState.stats[key] = stat.val;
+
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
