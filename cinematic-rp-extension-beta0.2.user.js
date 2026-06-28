@@ -476,20 +476,37 @@
     // 7. API TOOLS (JOURNAL & PING)
     // ==========================================
     const initToolsLogic = () => {
-        const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
-        gameState.apiKeys = savedKeys;
+        const savedKeysRaw = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        // Security: Sanitize newlines to prevent HTTP Header Injection from legacy unsanitized data
+        const sanitizeKey = (val) => val ? val.replace(/[\r\n]/g, '').trim() : '';
+        gameState.apiKeys = {
+            k: sanitizeKey(savedKeysRaw.k),
+            c: sanitizeKey(savedKeysRaw.c),
+            g: sanitizeKey(savedKeysRaw.g)
+        };
+
+        const mask = '••••••••••••••••';
+        const getValToSave = (inputId, type) => {
+            const val = document.getElementById(inputId).value;
+            return val === mask ? gameState.apiKeys[type] : sanitizeKey(val);
+        };
+
+        document.getElementById('inp-api-k').value = gameState.apiKeys.k ? mask : '';
+        document.getElementById('inp-api-c').value = gameState.apiKeys.c ? mask : '';
+        document.getElementById('inp-api-g').value = gameState.apiKeys.g ? mask : '';
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
-            // Security: Sanitize newlines to prevent HTTP Header Injection
-            const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            gameState.apiKeys.k = getValToSave('inp-api-k', 'k');
+            gameState.apiKeys.c = getValToSave('inp-api-c', 'c');
+            gameState.apiKeys.g = getValToSave('inp-api-g', 'g');
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+
+            // Security: Re-apply mask after save
+            document.getElementById('inp-api-k').value = gameState.apiKeys.k ? mask : '';
+            document.getElementById('inp-api-c').value = gameState.apiKeys.c ? mask : '';
+            document.getElementById('inp-api-g').value = gameState.apiKeys.g ? mask : '';
+
             showLog('[KEYS SAVED]', '#4ade80');
         });
 
@@ -552,8 +569,10 @@
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
             // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            const rawTargetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
+            const targetVal = rawTargetVal === '••••••••••••••••' ? gameState.apiKeys[type] : rawTargetVal;
+            const rawKeyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            const keyK = rawKeyK === '••••••••••••••••' ? gameState.apiKeys.k : rawKeyK;
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
@@ -581,7 +600,11 @@
                     success = res.ok;
                 }
                 icon.className = success ? 'online' : 'error';
-                if(success) gameState.apiKeys[type] = targetVal;
+                if(success) {
+                    gameState.apiKeys[type] = targetVal;
+                    // Security: Re-apply mask upon successful validation
+                    document.getElementById(`inp-api-${type}`).value = '••••••••••••••••';
+                }
             } catch (err) { icon.className = 'knd-status-icon error'; }
         };
 
