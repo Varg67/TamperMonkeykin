@@ -477,19 +477,39 @@
     // ==========================================
     const initToolsLogic = () => {
         const savedKeys = JSON.parse(GM_getValue('knd_rp_keys', '{"k":"","c":"","g":""}'));
-        gameState.apiKeys = savedKeys;
+        // Security: Explicitly sanitize keys loaded from storage
+        const sanitizeKey = (val) => (val || '').replace(/[\r\n]/g, '').trim();
+        gameState.apiKeys = {
+            k: sanitizeKey(savedKeys.k),
+            c: sanitizeKey(savedKeys.c),
+            g: sanitizeKey(savedKeys.g)
+        };
 
-        document.getElementById('inp-api-k').value = savedKeys.k;
-        document.getElementById('inp-api-c').value = savedKeys.c;
-        document.getElementById('inp-api-g').value = savedKeys.g;
+        const maskStr = '••••••••••••••••';
+
+        // Security: Mask initialized DOM values to prevent extraction by host scripts
+        document.getElementById('inp-api-k').value = gameState.apiKeys.k ? maskStr : '';
+        document.getElementById('inp-api-c').value = gameState.apiKeys.c ? maskStr : '';
+        document.getElementById('inp-api-g').value = gameState.apiKeys.g ? maskStr : '';
+
+        // Security Helper: Fall back to in-memory key if masked, else use typed value
+        const getReal = (type) => {
+            const el = document.getElementById(`inp-api-${type}`);
+            const val = el.value.replace(/[\r\n]/g, '').trim();
+            return (val === maskStr) ? gameState.apiKeys[type] : val;
+        };
 
         document.getElementById('knd-save-keys').addEventListener('click', () => {
-            // Security: Sanitize newlines to prevent HTTP Header Injection
-            const sanitizeKey = (val) => val.replace(/[\r\n]/g, '').trim();
-            gameState.apiKeys.k = sanitizeKey(document.getElementById('inp-api-k').value);
-            gameState.apiKeys.c = sanitizeKey(document.getElementById('inp-api-c').value);
-            gameState.apiKeys.g = sanitizeKey(document.getElementById('inp-api-g').value);
+            gameState.apiKeys.k = getReal('k');
+            gameState.apiKeys.c = getReal('c');
+            gameState.apiKeys.g = getReal('g');
             GM_setValue('knd_rp_keys', JSON.stringify(gameState.apiKeys));
+
+            // Re-apply mask to DOM
+            document.getElementById('inp-api-k').value = gameState.apiKeys.k ? maskStr : '';
+            document.getElementById('inp-api-c').value = gameState.apiKeys.c ? maskStr : '';
+            document.getElementById('inp-api-g').value = gameState.apiKeys.g ? maskStr : '';
+
             showLog('[KEYS SAVED]', '#4ade80');
         });
 
@@ -551,9 +571,9 @@
 
         const pingAPI = async (type) => {
             const icon = document.getElementById(`icon-${type}`);
-            // Security: Prevent header injection by removing newlines
-            const targetVal = document.getElementById(`inp-api-${type}`).value.replace(/[\r\n]/g, '').trim();
-            const keyK = document.getElementById('inp-api-k').value.replace(/[\r\n]/g, '').trim();
+            // Security: Use unmasked real value and prevent header injection
+            const targetVal = getReal(type);
+            const keyK = getReal('k');
             if(!targetVal) { icon.className = 'knd-status-icon error'; return; }
 
             icon.className = 'knd-status-icon testing';
@@ -581,7 +601,10 @@
                     success = res.ok;
                 }
                 icon.className = success ? 'online' : 'error';
-                if(success) gameState.apiKeys[type] = targetVal;
+                if(success) {
+                    gameState.apiKeys[type] = targetVal;
+                    document.getElementById(`inp-api-${type}`).value = targetVal ? maskStr : '';
+                }
             } catch (err) { icon.className = 'knd-status-icon error'; }
         };
 
