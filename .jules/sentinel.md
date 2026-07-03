@@ -2,3 +2,8 @@
 **Vulnerability:** Untrusted input (`targetVal`) injected directly into URL query parameters (`gemini-2.5-flash:generateContent?key=${targetVal}`) and HTTP Authorization Headers (`Bearer ${gameState.apiKeys.k}`). Error objects from JSON parsing were directly logged to the console.
 **Learning:** Userscripts interfacing with external APIs and parsing DOM-based data must validate, sanitize, and encode data precisely as server-side code would. Unsanitized input into query strings can lead to SSRF or parameter pollution, and newlines in tokens can lead to HTTP Header Injection. Furthermore, directly printing unvalidated JSON payloads to `console.error` can lead to log injection or log-based XSS depending on the browser console implementation.
 **Prevention:** Always use `encodeURIComponent()` for variables inserted into URL structures. Call `.trim()` and reject newlines for any value used in an HTTP header. Strip raw input objects before logging to the console (e.g. log static strings). Add explicit `parseFloat()` bounds to numerical logic that originates from unstructured or untrusted input (LLM JSON).
+
+## 2026-07-03 - High ReDoS Vulnerability in Payload Extraction
+**Vulnerability:** Regular Expression Denial of Service (ReDoS) due to greedy regex (`/[\s\S]*/`) on unstructured DOM text.
+**Learning:** The Tampermonkey script used `/\{[\s\S]*"loc"[\s\S]*\}/g` to find JSON boundaries in arbitrary user text. This causes catastrophic backtracking and freezes the browser tab when dealing with long, unmatched text inputs.
+**Prevention:** Avoid greedy regex for string isolation; use `indexOf('{')` and `lastIndexOf('}')` to find boundaries safely in O(N) time, and apply simple `.includes()` to verify internal keywords.
