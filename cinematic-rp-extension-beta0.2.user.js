@@ -257,13 +257,27 @@
         });
     };
 
+    // Performance: Cache primitive values to bypass redundant DOM manipulations
+    // and prevent layout thrashing on high-frequency UI updates.
+    const lastRenderState = { loc: null, tokens: null, stats: {} };
+
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        if (lastRenderState.loc !== gameState.loc) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+            lastRenderState.loc = gameState.loc;
+        }
+        if (lastRenderState.tokens !== gameState.tokens) {
+            domCache.tokens.textContent = gameState.tokens + 'T';
+            lastRenderState.tokens = gameState.tokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
             const config = statConfig[key];
+            const roundedVal = Math.round(stat.val);
+
+            if (lastRenderState.stats[key] === roundedVal) return;
+            lastRenderState.stats[key] = roundedVal;
             const blocks = domCache[`blocks-${key}`];
 
             domCache[`val-${key}`].textContent = `${Math.round(stat.val)}%`;
