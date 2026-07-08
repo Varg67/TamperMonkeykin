@@ -133,6 +133,7 @@
     // 3. UI RENDER ENGINE
     // ==========================================
     const domCache = {};
+    const lastRenderState = { loc: null, tokens: null, stats: {} };
     const createElement = (tag, id, className, textContent, attributes = {}) => {
         const el = document.createElement(tag);
         if (id) el.id = id;
@@ -258,11 +259,23 @@
     };
 
     const renderState = () => {
-        domCache.locText.textContent = `📍 ${gameState.loc}`;
-        domCache.tokens.textContent = gameState.tokens + 'T';
+        // Prevent layout thrashing by caching and early returning if values haven't changed
+        if (lastRenderState.loc !== gameState.loc) {
+            domCache.locText.textContent = `📍 ${gameState.loc}`;
+            lastRenderState.loc = gameState.loc;
+        }
+        if (lastRenderState.tokens !== gameState.tokens) {
+            domCache.tokens.textContent = gameState.tokens + 'T';
+            lastRenderState.tokens = gameState.tokens;
+        }
 
         Object.keys(gameState.stats).forEach(key => {
             const stat = gameState.stats[key];
+
+            // Early return to prevent unnecessary DOM mutations if stat value hasn't changed
+            if (lastRenderState.stats[key] === stat.val) return;
+            lastRenderState.stats[key] = stat.val;
+
             const config = statConfig[key];
             const blocks = domCache[`blocks-${key}`];
 
